@@ -18,6 +18,7 @@ type Client interface {
 	Auth(pwd string) error
 	ClientID() int32
 	Connection() net.Conn
+	Reconnect() error
 }
 
 type BaseClient struct {
@@ -26,7 +27,7 @@ type BaseClient struct {
 	isAuth bool
 }
 
-func (b *BaseClient) encode(payload string, pt PackageType) ([]byte, error) {
+func encode(payload string, pt PackageType) ([]byte, error) {
 	size := int32(4 + 4 + len(payload) + 2)
 	buf := bytes.NewBuffer([]byte{})
 	// use an array to extend in the future
@@ -52,7 +53,7 @@ func (b *BaseClient) encode(payload string, pt PackageType) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (b *BaseClient) decode(bs []byte) (*Response, error) {
+func decode(bs []byte) (*Response, error) {
 	resp := &Response{}
 	buffer := bytes.NewBuffer(bs)
 	err := binary.Read(buffer, binary.LittleEndian, &resp.size)
@@ -101,43 +102,58 @@ func (b *BaseClient) Close() error {
 }
 
 func (b *BaseClient) SendCommand(command string) (*Response, error) {
-	encode, err := b.encode(command, TypeCommand)
+	var (
+		encodeRes []byte
+		err       error
+		recv      []byte
+	)
+	encodeRes, err = encode(command, TypeCommand)
 	if err != nil {
 		return nil, err
 	}
-	err = b.send(encode)
+	err = b.send(encodeRes)
 	if err != nil {
 		return nil, err
 	}
-	var recv []byte
 	recv, err = b.recv()
 	if err != nil {
 		return nil, err
 	}
-	return b.decode(recv)
+	return decode(recv)
 }
 
 func (b *BaseClient) Auth(pwd string) error {
-	encode, err := b.encode(pwd, TypeAuthorize)
+	if b.isAuth {
+		return nil
+	}
+	var (
+		encodeRes []byte
+		err       error
+		response  *Response
+		recv      []byte
+	)
+	encodeRes, err = encode(pwd, TypeAuthorize)
 	if err != nil {
 		return err
 	}
-	err = b.send(encode)
+	err = b.send(encodeRes)
 	if err != nil {
 		return err
 	}
-	var recv []byte
 	recv, err = b.recv()
 	if err != nil {
 		return err
 	}
-	response, err := b.decode(recv)
+
+	response, err = decode(recv)
 	if err != nil {
 		return err
 	}
 	if response.id == -1 {
 		return errors.New("auth fail with password=" + pwd)
 	}
+
+	b.isAuth = true
 	return nil
 }
 
@@ -149,12 +165,28 @@ func (b *BaseClient) Connection() net.Conn {
 	return b.conn
 }
 
+func (b *BaseClient) Reconnect() error {
+	var (
+		conn net.Conn
+		err  error
+	)
+	conn, err = net.Dial("tcp", b.server)
+	if err != nil {
+		return err
+	}
+	if b.conn.Close() != nil {
+		return errors.New("error when close old TCP connection")
+	}
+	b.conn = conn
+	return nil
+}
+
 func NewClient(server string) (Client, error) {
 	var (
 		conn net.Conn
 		err  error
 	)
-	conn, err = net.Dial("tcp4", server)
+	conn, err = net.Dial("tcp", server)
 	if err != nil {
 		return nil, err
 	}
