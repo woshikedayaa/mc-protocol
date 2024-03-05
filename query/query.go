@@ -51,7 +51,7 @@ func (b *BaseClient) RefreshToken() error {
 		return errors.New("can not cast Response interface to HandleShakeResponse")
 	}
 	b.lastRefresh = time.Now().Unix()
-	b.cachedToken = hresp.newToken
+	b.cachedToken = hresp.token
 	return nil
 }
 
@@ -112,7 +112,7 @@ func (b *BaseClient) sendAndRecv(qt queryType, isFull bool) (Response, error) {
 			response = &BasicResponse{}
 		}
 	}
-	err = response.Encode(recv, qt)
+	err = response.Encode(recv)
 	if err != nil {
 		return nil, err
 	}
