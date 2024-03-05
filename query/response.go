@@ -43,11 +43,13 @@ type FullResponse struct {
 	_MOTD      string
 	gameType   string
 	_map       string
-	curPlayers int // current-player
-	maxPlayer  int
-	port       uint16
+	curPlayers string // current-player
+	maxPlayer  string
+	port       string
 	ip         string // alias hostname
 	// extend
+	plugins string
+	gameID  string
 	player  []string
 	version string
 }
@@ -119,7 +121,45 @@ func (r *BasicResponse) Encode(bs []byte) error {
 }
 
 func (r *FullResponse) Encode(bs []byte) error {
+	padding1 := []byte{0x73, 0x70, 0x6C, 0x69, 0x74, 0x6E, 0x75, 0x6D, 0x00, 0x80, 0x00}
+	padding2 := []byte{0x73, 0x70, 0x6C, 0x69, 0x74, 0x6E, 0x75, 0x6D, 0x00, 0x80, 0x00}
+	start := bytes.Index(bs, padding1) + len(padding1)
+	end := bytes.Index(bs[start:], padding2)
+	parseKVString(bs[start:end], r)
 	return r.EmptyResponse.Encode(bs)
+}
+
+func parseKVString(bs []byte, r *FullResponse) int {
+	n := len(bs)
+	var lastRead int
+	var find = func() string {
+		keyFind := false
+		ValueStart := lastRead
+		for i := lastRead; i < n; i++ {
+			if bs[i] == 0x00 {
+				if keyFind {
+					lastRead = i + 1 // skip 0x00
+					return string(bs[ValueStart:i])
+				}
+				keyFind = true
+				// skip 0x00
+				ValueStart = lastRead + 1
+			}
+		}
+		return ""
+	}
+
+	r._MOTD = find()
+	r.gameType = find()
+	r.gameID = find()
+	r.version = find()
+	r.plugins = find()
+	r._map = find()
+	r.curPlayers = find()
+	r.maxPlayer = find()
+	r.port = find()
+	r.ip = find()
+	return lastRead + 1 // skip
 }
 
 func (r *HandleShakeResponse) Encode(bs []byte) error {
