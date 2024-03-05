@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"unsafe"
 )
 
 type Response interface {
@@ -23,7 +22,8 @@ func (e *EmptyResponse) Encode(bs []byte) error {
 	}
 	// parse the typ and sessionID
 	e.typ = queryType(bs[0])
-	e.sessionID = int32(binary.LittleEndian.Uint32(bs[1 : unsafe.Sizeof(int32(0))+1]))
+	// big-Ending
+	e.sessionID = int32(uint32(bs[1])<<24 | uint32(bs[2])<<16 | uint32(bs[3])<<8 | uint32(bs[4]))
 	return nil
 }
 
@@ -32,10 +32,10 @@ type BasicResponse struct {
 	_MOTD      string
 	gameType   string
 	_map       string
-	curPlayers int
+	curPlayers int // current-player
 	maxPlayer  int
 	port       uint16
-	ip         string
+	ip         string // alias hostname
 }
 
 type FullResponse struct {
@@ -43,10 +43,10 @@ type FullResponse struct {
 	_MOTD      string
 	gameType   string
 	_map       string
-	curPlayers int
+	curPlayers int // current-player
 	maxPlayer  int
 	port       uint16
-	ip         string
+	ip         string // alias hostname
 	// extend
 	player  []string
 	version string
@@ -57,41 +57,60 @@ type HandleShakeResponse struct {
 	token int32
 }
 
+// Encode BasicResponse
 func (r *BasicResponse) Encode(bs []byte) error {
 	var err error
+	// 5 for sessionID and queryType
 	buffer := bytes.NewBuffer(bs[5:])
+	// motd
 	r._MOTD, err = buffer.ReadString(0x00)
 	if err != nil {
 		return err
 	}
+	// game-type
 	r.gameType, err = buffer.ReadString(0x00)
 	if err != nil {
 		return err
 	}
+	// map
 	r._map, err = buffer.ReadString(0x00)
 	if err != nil {
 		return err
 	}
-	var num32 []byte
-	num32, err = buffer.ReadBytes(0x00)
+	// playerNum for numPlayer and maxPlayer
+	var playerNum []byte
+	// curPlayer
+	playerNum, err = buffer.ReadBytes(0x00)
 	if err != nil {
 		return err
 	}
-	r.curPlayers = int(binary.LittleEndian.Uint32(num32))
+	// 这个 playerNum 其实是长度不定的
+	// 1 <= len(playerNum) <= 4    [1,4]
+	// 要使用位运算来算
+	// r.curPlayers = int(binary.LittleEndian.Uint32(playerNum))
+	for i := 0; i < len(playerNum); i++ {
+		r.curPlayers = r.curPlayers<<8 | int(playerNum[i])
+	}
 	if err != nil {
 		return err
 	}
-	num32, err = buffer.ReadBytes(0x00)
+	playerNum, err = buffer.ReadBytes(0x00)
 	if err != nil {
 		return err
 	}
-	r.maxPlayer = int(binary.LittleEndian.Uint32(num32))
+	// 同理
+	// r.maxPlayer = int(binary.LittleEndian.Uint32(playerNum))
+	for i := 0; i < len(playerNum); i++ {
+		r.maxPlayer = r.maxPlayer<<8 | int(playerNum[i])
+	}
+	// port
 	port := []byte{0xDD, 0x63} // 25565
 	_, err = buffer.Read(port)
 	if err != nil {
 		return err
 	}
 	r.port = binary.LittleEndian.Uint16(port)
+	// hostname
 	r.ip, err = buffer.ReadString(0x00)
 	if err != nil && !errors.Is(err, io.EOF) {
 		return err

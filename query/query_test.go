@@ -1,4 +1,4 @@
-package query
+package query_test
 
 import (
 	"net"
