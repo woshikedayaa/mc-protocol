@@ -123,5 +123,11 @@ func (r *FullResponse) Encode(bs []byte) error {
 }
 
 func (r *HandleShakeResponse) Encode(bs []byte) error {
+	buffer := bytes.NewBuffer(bs[5:])
+	token, err := buffer.ReadString(0x00)
+	if err != nil {
+		return err
+	}
+	r.token = parseTokenString(token)
 	return r.EmptyResponse.Encode(bs)
 }

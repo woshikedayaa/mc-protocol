@@ -1,9 +1,9 @@
 package query
 
 import (
-	"encoding/binary"
 	"errors"
 	"net"
+	"strconv"
 	"time"
 )
 
@@ -148,5 +148,6 @@ func (b *BaseClient) recv() ([]byte, error) {
 }
 
 func parseTokenString(s string) int32 {
-	return int32(binary.BigEndian.Uint32([]byte(s)))
+	atoi, _ := strconv.Atoi(s)
+	return int32(atoi)
 }
