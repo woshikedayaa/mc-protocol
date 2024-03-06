@@ -3,6 +3,7 @@ package query
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"io"
 	"strconv"
@@ -10,11 +11,57 @@ import (
 
 type Response interface {
 	encode([]byte) error
+	ToFull() (*FullResponse, error)
+	ToBasic() (*BasicResponse, error)
+	ToHandleShake() (*HandleShakeResponse, error)
+
+	JSON() ([]byte, error)
+	SessionID() int32
+	IsStatQuery() bool
 }
 
 type EmptyResponse struct {
 	typ       queryType
 	sessionID int32
+}
+
+func (e *EmptyResponse) JSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"sessionID": e.SessionID(),
+		"queryType": int(e.typ), // 9 for handshake, 0 for stat
+	})
+}
+
+func (e *EmptyResponse) SessionID() int32 {
+	return e.sessionID
+}
+
+func (e *EmptyResponse) IsStatQuery() bool {
+	return e.typ == StatType
+}
+
+func (e *EmptyResponse) ToFull() (*FullResponse, error) {
+	res, ok := Response(e).(*FullResponse)
+	if !ok {
+		return nil, errors.New("can not cast Response interface to FullResponse")
+	}
+	return res, nil
+}
+
+func (e *EmptyResponse) ToBasic() (*BasicResponse, error) {
+	res, ok := Response(e).(*BasicResponse)
+	if !ok {
+		return nil, errors.New("can not cast Response interface to BasicResponse")
+	}
+	return res, nil
+}
+
+func (e *EmptyResponse) ToHandleShake() (*HandleShakeResponse, error) {
+	res, ok := Response(e).(*HandleShakeResponse)
+	if !ok {
+		return nil, errors.New("can not cast Response interface to HandleShakeResponse")
+	}
+	return res, nil
 }
 
 func (e *EmptyResponse) encode(bs []byte) error {
