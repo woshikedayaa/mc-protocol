@@ -5,10 +5,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"strconv"
 )
 
 type Response interface {
-	Encode([]byte) error
+	encode([]byte) error
 }
 
 type EmptyResponse struct {
@@ -16,7 +17,7 @@ type EmptyResponse struct {
 	sessionID int32
 }
 
-func (e *EmptyResponse) Encode(bs []byte) error {
+func (e *EmptyResponse) encode(bs []byte) error {
 	if len(bs) < 5 {
 		return errors.New("response bytes length to short")
 	}
@@ -60,7 +61,7 @@ type HandleShakeResponse struct {
 }
 
 // Encode BasicResponse
-func (r *BasicResponse) Encode(bs []byte) error {
+func (r *BasicResponse) encode(bs []byte) error {
 	var err error
 	// 5 for sessionID and queryType
 	buffer := bytes.NewBuffer(bs[5:])
@@ -106,7 +107,7 @@ func (r *BasicResponse) Encode(bs []byte) error {
 		r.maxPlayer = r.maxPlayer<<8 | int(playerNum[i])
 	}
 	// port
-	port := []byte{0xDD, 0x63} // 25565
+	port := []byte{0xDD, 0x63} // default 25565
 	_, err = buffer.Read(port)
 	if err != nil {
 		return err
@@ -117,19 +118,34 @@ func (r *BasicResponse) Encode(bs []byte) error {
 	if err != nil && !errors.Is(err, io.EOF) {
 		return err
 	}
-	return r.EmptyResponse.Encode(bs)
+	return r.EmptyResponse.encode(bs)
 }
 
-func (r *FullResponse) Encode(bs []byte) error {
-	padding1 := []byte{0x73, 0x70, 0x6C, 0x69, 0x74, 0x6E, 0x75, 0x6D, 0x00, 0x80, 0x00}
-	padding2 := []byte{0x73, 0x70, 0x6C, 0x69, 0x74, 0x6E, 0x75, 0x6D, 0x00, 0x80, 0x00}
-	start := bytes.Index(bs, padding1) + len(padding1)
-	end := bytes.Index(bs[start:], padding2)
-	parseKVString(bs[start:end], r)
-	return r.EmptyResponse.Encode(bs)
+func (r *FullResponse) encode(bs []byte) error {
+	Skip1 := 1 + 4 + 11
+	Skip2 := 10
+	Skip2 += r.parseKVString(bs[Skip1:]) + Skip1
+	r.parsePlayerString(bs[Skip2:])
+	return r.EmptyResponse.encode(bs)
 }
 
-func parseKVString(bs []byte, r *FullResponse) int {
+func (r *HandleShakeResponse) encode(bs []byte) error {
+	// todo  验证是不是 HandleShake
+	buffer := bytes.NewBuffer(bs[5:])
+	token, err := buffer.ReadString(0x00)
+	if err != nil {
+		return err
+	}
+	r.token = r.parseTokenString(token)
+	return r.EmptyResponse.encode(bs)
+}
+
+func (r *HandleShakeResponse) parseTokenString(s string) int32 {
+	atoi, _ := strconv.Atoi(s)
+	return int32(atoi)
+}
+
+func (r *FullResponse) parseKVString(bs []byte) int {
 	n := len(bs)
 	var lastRead int
 	var find = func() string {
@@ -137,13 +153,16 @@ func parseKVString(bs []byte, r *FullResponse) int {
 		ValueStart := lastRead
 		for i := lastRead; i < n; i++ {
 			if bs[i] == 0x00 {
+				if lastRead == i { // end
+					return ""
+				}
 				if keyFind {
 					lastRead = i + 1 // skip 0x00
 					return string(bs[ValueStart:i])
 				}
 				keyFind = true
 				// skip 0x00
-				ValueStart = lastRead + 1
+				ValueStart = i + 1
 			}
 		}
 		return ""
@@ -159,15 +178,27 @@ func parseKVString(bs []byte, r *FullResponse) int {
 	r.maxPlayer = find()
 	r.port = find()
 	r.ip = find()
+
+	for len(find()) != 0 {
+	} // find last
 	return lastRead + 1 // skip
 }
 
-func (r *HandleShakeResponse) Encode(bs []byte) error {
-	buffer := bytes.NewBuffer(bs[5:])
-	token, err := buffer.ReadString(0x00)
-	if err != nil {
-		return err
+func (r *FullResponse) parsePlayerString(bs []byte) {
+	var (
+		err error
+		buf = bytes.NewBuffer(bs)
+		s   = ""
+	)
+	for !errors.Is(err, io.EOF) || len(s) != 0 {
+		s, err = buf.ReadString(0x00)
+		if len(s) != 0 {
+			r.player = append(r.player, s)
+		}
 	}
-	r.token = parseTokenString(token)
-	return r.EmptyResponse.Encode(bs)
+	// avoid memory-leak
+	r.player = append([]string{}, r.player[:len(r.player)-1]...)
+	if err != nil && !errors.Is(err, io.EOF) {
+		panic(err)
+	}
 }

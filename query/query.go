@@ -3,7 +3,6 @@ package query
 import (
 	"errors"
 	"net"
-	"strconv"
 	"time"
 )
 
@@ -112,7 +111,7 @@ func (b *BaseClient) sendAndRecv(qt queryType, isFull bool) (Response, error) {
 			response = &BasicResponse{}
 		}
 	}
-	err = response.Encode(recv)
+	err = response.encode(recv)
 	if err != nil {
 		return nil, err
 	}
@@ -145,9 +144,4 @@ func (b *BaseClient) recv() ([]byte, error) {
 		return nil, err
 	}
 	return append([]byte{}, buf[:n]...), nil
-}
-
-func parseTokenString(s string) int32 {
-	atoi, _ := strconv.Atoi(s)
-	return int32(atoi)
 }
