@@ -56,9 +56,9 @@ func (r *FullResponse) JSON() ([]byte, error) {
 		"gameType":  r.gameType,
 		"motd":      r._MOTD,
 		"map":       r._map,
-		"numPlayer": r.curPlayers,
-		"maxPlayer": r.maxPlayer,
-		"port":      r.port,
+		"numPlayer": r.NumPlayer(),
+		"maxPlayer": r.MaxPlayer(),
+		"port":      r.Port(),
 		"hostip":    r.ip,
 		"player":    r.player,
 		"plugin":    r.plugins,
@@ -120,6 +120,11 @@ func (r *FullResponse) GameID() string {
 
 func (r *FullResponse) Version() string {
 	return r.version
+}
+
+func (r *FullResponse) Plugins() string {
+	// todo parse
+	return r.plugins
 }
 
 func (r *HandleShakeResponse) JSON() ([]byte, error) {

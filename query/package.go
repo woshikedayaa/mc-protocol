@@ -29,7 +29,7 @@ func (p *PackageQuery) Encode() ([]byte, error) {
 	*/
 
 	buf := bytes.NewBuffer(make([]byte, 0))
-	err := binary.Write(buf, binary.LittleEndian, magic)
+	err := binary.Write(buf, binary.BigEndian, magic)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (p *PackageQuery) Encode() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = binary.Write(buf, binary.LittleEndian, p.sessionID)
+	err = binary.Write(buf, binary.BigEndian, p.sessionID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,12 +45,13 @@ func (p *PackageQuery) Encode() ([]byte, error) {
 	case HandShakeType:
 		// do nothing
 	case StatType:
-		err = binary.Write(buf, binary.LittleEndian, p.token)
+		err = binary.Write(buf, binary.BigEndian, p.token)
 		if err != nil {
 			return nil, err
 		}
+		// padding
 		if p.isFull {
-			err = binary.Write(buf, binary.LittleEndian, int32(0))
+			err = binary.Write(buf, binary.BigEndian, int32(0))
 			if err != nil {
 				return nil, err
 			}

@@ -11,9 +11,6 @@ import (
 
 type Response interface {
 	encode([]byte) error
-	ToFull() (*FullResponse, error)
-	ToBasic() (*BasicResponse, error)
-	ToHandleShake() (*HandleShakeResponse, error)
 
 	JSON() ([]byte, error)
 	SessionID() int32
@@ -38,30 +35,6 @@ func (e *EmptyResponse) SessionID() int32 {
 
 func (e *EmptyResponse) IsStatQuery() bool {
 	return e.typ == StatType
-}
-
-func (e *EmptyResponse) ToFull() (*FullResponse, error) {
-	res, ok := Response(e).(*FullResponse)
-	if !ok {
-		return nil, errors.New("can not cast Response interface to FullResponse")
-	}
-	return res, nil
-}
-
-func (e *EmptyResponse) ToBasic() (*BasicResponse, error) {
-	res, ok := Response(e).(*BasicResponse)
-	if !ok {
-		return nil, errors.New("can not cast Response interface to BasicResponse")
-	}
-	return res, nil
-}
-
-func (e *EmptyResponse) ToHandleShake() (*HandleShakeResponse, error) {
-	res, ok := Response(e).(*HandleShakeResponse)
-	if !ok {
-		return nil, errors.New("can not cast Response interface to HandleShakeResponse")
-	}
-	return res, nil
 }
 
 func (e *EmptyResponse) encode(bs []byte) error {
@@ -136,10 +109,10 @@ func (r *BasicResponse) encode(bs []byte) error {
 	}
 	// 这个 playerNum 其实是长度不定的
 	// 1 <= len(playerNum) <= 4    [1,4]
-	// 要使用位运算来算
+	// 使用for来计算
 	// r.curPlayers = int(binary.LittleEndian.Uint32(playerNum))
 	for i := 0; i < len(playerNum); i++ {
-		r.curPlayers = r.curPlayers<<8 | int(playerNum[i])
+		r.curPlayers = r.curPlayers*10 + int(playerNum[i]-'0')
 	}
 	if err != nil {
 		return err
@@ -151,7 +124,7 @@ func (r *BasicResponse) encode(bs []byte) error {
 	// 同理
 	// r.maxPlayer = int(binary.LittleEndian.Uint32(playerNum))
 	for i := 0; i < len(playerNum); i++ {
-		r.maxPlayer = r.maxPlayer<<8 | int(playerNum[i])
+		r.maxPlayer = r.maxPlayer*10 + int(playerNum[i]-'0')
 	}
 	// port
 	port := []byte{0xDD, 0x63} // default 25565
@@ -177,18 +150,26 @@ func (r *FullResponse) encode(bs []byte) error {
 }
 
 func (r *HandleShakeResponse) encode(bs []byte) error {
-	// todo  验证是不是 HandleShake
 	buffer := bytes.NewBuffer(bs[5:])
-	token, err := buffer.ReadString(0x00)
+	token, err := buffer.ReadBytes(0x00)
 	if err != nil {
 		return err
 	}
-	r.token = r.parseTokenString(token)
-	return r.EmptyResponse.encode(bs)
+	err = r.EmptyResponse.encode(bs)
+	if err != nil {
+		return err
+	}
+
+	if r.IsStatQuery() {
+		return errors.New("except QueryType is HandShakeType,but current QueryType is StatType")
+	}
+
+	r.token = r.parseTokenString(string(token))
+	return nil
 }
 
 func (r *HandleShakeResponse) parseTokenString(s string) int32 {
-	atoi, _ := strconv.Atoi(s)
+	atoi, _ := strconv.Atoi(s[:len(s)-1])
 	return int32(atoi)
 }
 

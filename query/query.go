@@ -1,7 +1,6 @@
 package query
 
 import (
-	"errors"
 	"net"
 	"time"
 )
@@ -22,18 +21,37 @@ type Client interface {
 	RefreshToken() error
 	IsTokenExpire() bool
 	SessionID() int32
-	FullRequest() (Response, error)
-	BasicRequest() (Response, error)
-	HandShake() (Response, error)
+	FullRequest() (*FullResponse, error)
+	BasicRequest() (*BasicResponse, error)
+	HandShake() (*HandleShakeResponse, error)
+	Close() error
 }
 
 type BaseClient struct {
-	conn   net.Conn
+	conn   *net.UDPConn
 	server string
+	port   int
 
 	lastRefresh int64
 	sessionID   int32
 	cachedToken int32
+}
+
+func NewQueryClient(server string, port int) (Client, error) {
+	c := &BaseClient{}
+	c.server = server
+	c.sessionID = int32(time.Now().Unix()) & 0x0F0F0F0F
+	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{IP: net.ParseIP(server), Port: port})
+	if err != nil {
+		return nil, err
+	}
+	c.conn = conn
+
+	return c, nil
+}
+
+func (b *BaseClient) Close() error {
+	return b.conn.Close()
 }
 
 func (b *BaseClient) Token() int32 {
@@ -45,9 +63,10 @@ func (b *BaseClient) RefreshToken() error {
 	if err != nil {
 		return err
 	}
-	hresp, ok := resp.(*HandleShakeResponse)
-	if !ok {
-		return errors.New("can not cast Response interface to HandleShakeResponse")
+	hresp := &HandleShakeResponse{}
+	err = hresp.encode(resp)
+	if err != nil {
+		return err
 	}
 	b.lastRefresh = time.Now().Unix()
 	b.cachedToken = hresp.token
@@ -62,24 +81,51 @@ func (b *BaseClient) SessionID() int32 {
 	return b.sessionID
 }
 
-func (b *BaseClient) FullRequest() (Response, error) {
-	return b.sendAndRecv(StatType, true)
+func (b *BaseClient) FullRequest() (*FullResponse, error) {
+	res := &FullResponse{}
+	recv, err := b.sendAndRecv(StatType, true)
+	if err != nil {
+		return nil, err
+	}
+	err = res.encode(recv)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
-func (b *BaseClient) BasicRequest() (Response, error) {
-	return b.sendAndRecv(StatType, false)
+func (b *BaseClient) BasicRequest() (*BasicResponse, error) {
+	res := &BasicResponse{}
+	recv, err := b.sendAndRecv(StatType, false)
+	if err != nil {
+		return nil, err
+	}
+	err = res.encode(recv)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
-func (b *BaseClient) HandShake() (Response, error) {
-	return b.sendAndRecv(HandShakeType, false)
+func (b *BaseClient) HandShake() (*HandleShakeResponse, error) {
+	res := &HandleShakeResponse{}
+	recv, err := b.sendAndRecv(HandShakeType, true)
+	if err != nil {
+		return nil, err
+	}
+	err = res.encode(recv)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
-func (b *BaseClient) sendAndRecv(qt queryType, isFull bool) (Response, error) {
+func (b *BaseClient) sendAndRecv(qt queryType, isFull bool) ([]byte, error) {
 
 	var (
-		err      error
-		pkg      Package
-		response Response
+		err  error
+		pkg  Package
+		recv []byte
 	)
 	if b.IsTokenExpire() && qt != HandShakeType {
 		err = b.RefreshToken()
@@ -97,25 +143,11 @@ func (b *BaseClient) sendAndRecv(qt queryType, isFull bool) (Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	var recv []byte
 	recv, err = b.recv()
 	if err != nil {
 		return nil, err
 	}
-	if qt == HandShakeType {
-		response = &HandleShakeResponse{}
-	} else {
-		if isFull {
-			response = &FullResponse{}
-		} else {
-			response = &BasicResponse{}
-		}
-	}
-	err = response.encode(recv)
-	if err != nil {
-		return nil, err
-	}
-	return response, nil
+	return recv, nil
 }
 
 func (b *BaseClient) send(p Package) error {
@@ -139,7 +171,7 @@ func (b *BaseClient) recv() ([]byte, error) {
 		bufSize = 4096
 		buf     = make([]byte, bufSize)
 	)
-	n, err := b.conn.Read(buf)
+	n, _, err := b.conn.ReadFromUDP(buf)
 	if err != nil {
 		return nil, err
 	}
