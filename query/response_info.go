@@ -2,9 +2,6 @@ package query
 
 import (
 	"encoding/json"
-	"errors"
-	"math"
-	"strconv"
 )
 
 func (r *BasicResponse) JSON() ([]byte, error) {
@@ -41,7 +38,7 @@ func (r *BasicResponse) MaxPlayer() int {
 	return r.maxPlayer
 }
 
-func (r *BasicResponse) Port() uint16 {
+func (r *BasicResponse) Port() int {
 	return r.port
 }
 
@@ -80,30 +77,15 @@ func (r *FullResponse) Map() string {
 }
 
 func (r *FullResponse) NumPlayer() int {
-	atoi, err := strconv.Atoi(r.maxPlayer)
-	if err != nil {
-		panic(err)
-	}
-	return atoi
+	return r.curPlayers
 }
 
 func (r *FullResponse) MaxPlayer() int {
-	atoi, err := strconv.Atoi(r.maxPlayer)
-	if err != nil {
-		panic(err)
-	}
-	return atoi
+	return r.maxPlayer
 }
 
-func (r *FullResponse) Port() uint16 {
-	atoi, err := strconv.Atoi(r.port)
-	if err != nil {
-		panic(err)
-	}
-	if atoi > math.MaxUint16 {
-		panic(errors.New("port can not bigger than 65535"))
-	}
-	return uint16(atoi)
+func (r *FullResponse) Port() int {
+	return r.port
 }
 
 func (r *FullResponse) HostIP() string {

@@ -55,7 +55,7 @@ type BasicResponse struct {
 	_map       string
 	curPlayers int // current-player
 	maxPlayer  int
-	port       uint16
+	port       int
 	ip         string // alias hostname
 }
 
@@ -64,9 +64,9 @@ type FullResponse struct {
 	_MOTD      string
 	gameType   string
 	_map       string
-	curPlayers string // current-player
-	maxPlayer  string
-	port       string
+	curPlayers int // current-player
+	maxPlayer  int
+	port       int
 	ip         string // alias hostname
 	// extend
 	plugins string
@@ -82,62 +82,33 @@ type HandleShakeResponse struct {
 
 // Encode BasicResponse
 func (r *BasicResponse) encode(bs []byte) error {
-	var err error
-	// 5 for sessionID and queryType
-	buffer := bytes.NewBuffer(bs[5:])
-	// motd
-	r._MOTD, err = buffer.ReadString(0x00)
-	if err != nil {
-		return err
-	}
-	// game-type
-	r.gameType, err = buffer.ReadString(0x00)
-	if err != nil {
-		return err
-	}
-	// map
-	r._map, err = buffer.ReadString(0x00)
-	if err != nil {
-		return err
-	}
-	// playerNum for numPlayer and maxPlayer
-	var playerNum []byte
-	// curPlayer
-	playerNum, err = buffer.ReadBytes(0x00)
-	if err != nil {
-		return err
-	}
-	// 这个 playerNum 其实是长度不定的
-	// 1 <= len(playerNum) <= 4    [1,4]
-	// 使用for来计算
-	// r.curPlayers = int(binary.LittleEndian.Uint32(playerNum))
-	for i := 0; i < len(playerNum); i++ {
-		r.curPlayers = r.curPlayers*10 + int(playerNum[i]-'0')
-	}
-	if err != nil {
-		return err
-	}
-	playerNum, err = buffer.ReadBytes(0x00)
-	if err != nil {
-		return err
-	}
-	// 同理
-	// r.maxPlayer = int(binary.LittleEndian.Uint32(playerNum))
-	for i := 0; i < len(playerNum); i++ {
-		r.maxPlayer = r.maxPlayer*10 + int(playerNum[i]-'0')
-	}
-	// port
-	port := []byte{0xDD, 0x63} // default 25565
-	_, err = buffer.Read(port)
-	if err != nil {
-		return err
-	}
-	r.port = binary.LittleEndian.Uint16(port)
-	// hostname
-	r.ip, err = buffer.ReadString(0x00)
-	if err != nil && !errors.Is(err, io.EOF) {
-		return err
-	}
+	var (
+		lastRead = 5 // start
+		n        = len(bs)
+		find     = func() []byte {
+			for i := lastRead; i < n; i++ {
+				if bs[i] == 0x00 {
+					if i == lastRead {
+						lastRead++
+						return nil
+					}
+					res := bs[lastRead:i]
+					lastRead = i + 1 // skip 0x00
+					return res
+				}
+			}
+			return nil
+		}
+	)
+	r._MOTD = string(find())
+	r.gameType = string(find())
+	r._map = string(find())
+	r.curPlayers = byteArrayToInt(find())
+	r.maxPlayer = byteArrayToInt(find())
+	tempLastRead := lastRead
+	r.port = int(binary.LittleEndian.Uint16(find())) // 这里应该只读2个Byte
+	lastRead = tempLastRead + 2
+	r.ip = string(find())
 	return r.EmptyResponse.encode(bs)
 }
 
@@ -176,40 +147,41 @@ func (r *HandleShakeResponse) parseTokenString(s string) int32 {
 func (r *FullResponse) parseKVString(bs []byte) int {
 	n := len(bs)
 	var lastRead int
-	var find = func() string {
+	var find = func() []byte {
 		keyFind := false
 		ValueStart := lastRead
 		for i := lastRead; i < n; i++ {
 			if bs[i] == 0x00 {
 				if lastRead == i { // end
-					return ""
+					lastRead = i + 1 // skip
+					return nil
 				}
 				if keyFind {
 					lastRead = i + 1 // skip 0x00
-					return string(bs[ValueStart:i])
+					return bs[ValueStart:i]
 				}
 				keyFind = true
 				// skip 0x00
 				ValueStart = i + 1
 			}
 		}
-		return ""
+		return nil
 	}
 
-	r._MOTD = find()
-	r.gameType = find()
-	r.gameID = find()
-	r.version = find()
-	r.plugins = find()
-	r._map = find()
-	r.curPlayers = find()
-	r.maxPlayer = find()
-	r.port = find()
-	r.ip = find()
+	r._MOTD = string(find())
+	r.gameType = string(find())
+	r.gameID = string(find())
+	r.version = string(find())
+	r.plugins = string(find())
+	r._map = string(find())
+	r.curPlayers = byteArrayToInt(find())
+	r.maxPlayer = byteArrayToInt(find())
+	r.port = byteArrayToInt(find())
+	r.ip = string(find())
 
 	for len(find()) != 0 {
 	} // find last
-	return lastRead + 1 // skip
+	return lastRead
 }
 
 func (r *FullResponse) parsePlayerString(bs []byte) {
@@ -229,4 +201,11 @@ func (r *FullResponse) parsePlayerString(bs []byte) {
 	if err != nil && !errors.Is(err, io.EOF) {
 		panic(err)
 	}
+}
+
+func byteArrayToInt(bs []byte) (ans int) {
+	for i := 0; i < len(bs); i++ {
+		ans = ans*10 + int(bs[i]-'0')
+	}
+	return
 }
