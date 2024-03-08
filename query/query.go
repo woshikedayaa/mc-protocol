@@ -23,7 +23,7 @@ type Client interface {
 	SessionID() int32
 	FullRequest() (*FullResponse, error)
 	BasicRequest() (*BasicResponse, error)
-	HandShake() (*HandleShakeResponse, error)
+	HandShakeRequest() (*HandleShakeResponse, error)
 	Close() error
 }
 
@@ -116,7 +116,7 @@ func (b *BaseClient) BasicRequest() (*BasicResponse, error) {
 	return res, nil
 }
 
-func (b *BaseClient) HandShake() (*HandleShakeResponse, error) {
+func (b *BaseClient) HandShakeRequest() (*HandleShakeResponse, error) {
 	res := &HandleShakeResponse{}
 	recv, err := b.sendAndRecv(HandShakeType, true)
 	if err != nil {

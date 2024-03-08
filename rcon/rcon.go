@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"sync/atomic"
+	"time"
 )
 
 var (
@@ -25,6 +26,9 @@ type BaseClient struct {
 	conn   net.Conn
 	server string
 	isAuth bool
+	// options
+
+	timeout time.Duration
 }
 
 func encode(payload string, pt PackageType) ([]byte, error) {
@@ -111,6 +115,10 @@ func (b *BaseClient) SendCommand(command string) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = b.conn.SetDeadline(time.Now().Add(b.timeout))
+	if err != nil {
+		return nil, err
+	}
 	err = b.send(encodeRes)
 	if err != nil {
 		return nil, err
@@ -136,6 +144,11 @@ func (b *BaseClient) Auth(pwd string) error {
 	if err != nil {
 		return err
 	}
+	err = b.conn.SetDeadline(time.Now().Add(b.timeout))
+	if err != nil {
+		return err
+	}
+
 	err = b.send(encodeRes)
 	if err != nil {
 		return err
@@ -181,18 +194,21 @@ func (b *BaseClient) Reconnect() error {
 	return nil
 }
 
-func NewRconClient(server string) (Client, error) {
+func NewRconClient(server string, ops ...Option) (Client, error) {
 	var (
 		conn net.Conn
 		err  error
+		c    *BaseClient
 	)
 	conn, err = net.Dial("tcp", server)
 	if err != nil {
 		return nil, err
 	}
-
-	return &BaseClient{
-		server: server,
-		conn:   conn,
-	}, nil
+	c.conn = conn
+	c.server = server
+	c.isAuth = false
+	for _, v := range append(defaultOptions, ops...) {
+		v.apply(c)
+	}
+	return c, nil
 }

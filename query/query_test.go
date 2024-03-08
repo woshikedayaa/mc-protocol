@@ -11,7 +11,7 @@ func TestBaseClient_New(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer client.Close()
-	response, err := client.HandShake()
+	response, err := client.HandShakeRequest()
 	if err != nil {
 		t.Fatal(err)
 	}
