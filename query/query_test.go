@@ -6,16 +6,12 @@ import (
 )
 
 func TestBaseClient_New(t *testing.T) {
-	client, err := NewQueryClient("172.30.28.83", 5001)
+	client, err := NewQueryClient("debian:5001")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer client.Close()
 	response, err := client.HandShake()
-
-	if err != nil {
-		t.Fatal(err)
-	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +23,7 @@ func TestBaseClient_New(t *testing.T) {
 }
 
 func TestBaseClient_FullRequest(t *testing.T) {
-	client, err := NewQueryClient("172.30.28.83", 5001)
+	client, err := NewQueryClient("debian:5001")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +40,7 @@ func TestBaseClient_FullRequest(t *testing.T) {
 }
 
 func TestBaseClient_BasicRequest(t *testing.T) {
-	client, err := NewQueryClient("172.30.28.83", 5001)
+	client, err := NewQueryClient("debian:5001")
 	if err != nil {
 		t.Fatal(err)
 	}

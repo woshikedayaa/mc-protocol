@@ -37,11 +37,15 @@ type BaseClient struct {
 	cachedToken int32
 }
 
-func NewQueryClient(server string, port int) (Client, error) {
+func NewQueryClient(server string) (Client, error) {
 	c := &BaseClient{}
 	c.server = server
+	addr, err := net.ResolveUDPAddr("udp", server)
+	if err != nil {
+		return nil, err
+	}
 	c.sessionID = int32(time.Now().Unix()) & 0x0F0F0F0F
-	conn, err := net.DialUDP("udp", nil, &net.UDPAddr{IP: net.ParseIP(server), Port: port})
+	conn, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
 		return nil, err
 	}

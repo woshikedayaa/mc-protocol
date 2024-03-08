@@ -2,37 +2,11 @@ package rcon
 
 import (
 	"fmt"
-	"net"
 	"testing"
 )
 
-func TestTcpRead(t *testing.T) {
-	conn, err := net.Dial("tcp4", "172.30.28.83:5001")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer conn.Close()
-	_, err = conn.Write([]byte("Hello\n"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var n int
-	buf := make([]byte, 4)
-	n, err = conn.Read(buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(string(buf[:n]))
-
-	n, err = conn.Read(buf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(string(buf[:n]))
-}
-
 func TestNewClient(t *testing.T) {
-	client, err := NewClient("172.30.28.83:25575")
+	client, err := NewClient("debian:25575")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +14,7 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestBaseClient_Auth(t *testing.T) {
-	client, err := NewClient("172.30.28.83:25575")
+	client, err := NewClient("debian:25575")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +26,7 @@ func TestBaseClient_Auth(t *testing.T) {
 }
 
 func TestBaseClient_SendCommand(t *testing.T) {
-	client, err := NewClient("172.30.28.83:25575")
+	client, err := NewClient("debian:25575")
 	if err != nil {
 		t.Fatal(err)
 	}
