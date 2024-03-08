@@ -9,7 +9,7 @@ import (
 func TestBasicResponse_Encode(t *testing.T) {
 	resp := &BasicResponse{}
 	start := time.Now()
-	err := resp.encode(getBasicResponseTestExample())
+	err := resp.decode(getBasicResponseTestExample())
 	fmt.Println(time.Now().Sub(start).Milliseconds(), "ms")
 	if err != nil {
 		t.Fatal(err)
@@ -21,13 +21,13 @@ func BenchmarkBasicResponse_Encode(b *testing.B) {
 	resp := &BasicResponse{}
 	bs := getBasicResponseTestExample()
 	for i := 0; i < b.N; i++ {
-		resp.encode(bs)
+		resp.decode(bs)
 	}
 }
 
 func TestParseKVString(t *testing.T) {
 	resp := &FullResponse{}
-	err := resp.encode(getFullResponseTestExample())
+	err := resp.decode(getFullResponseTestExample())
 	if err != nil {
 		t.Fatal(err)
 	}

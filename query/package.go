@@ -60,7 +60,7 @@ func (p *PackageQuery) Encode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func NewPackage(c Client, typ queryType) Package {
+func newPackage(c Client, typ queryType) Package {
 	return &PackageQuery{
 		typ:       typ,
 		isFull:    false,
@@ -69,7 +69,7 @@ func NewPackage(c Client, typ queryType) Package {
 	}
 }
 
-func NewFullPackage(c Client, typ queryType) Package {
+func newFullPackage(c Client, typ queryType) Package {
 	return &PackageQuery{
 		typ:       typ,
 		isFull:    true,

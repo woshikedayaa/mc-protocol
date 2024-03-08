@@ -181,7 +181,7 @@ func (b *BaseClient) Reconnect() error {
 	return nil
 }
 
-func NewClient(server string) (Client, error) {
+func NewRconClient(server string) (Client, error) {
 	var (
 		conn net.Conn
 		err  error

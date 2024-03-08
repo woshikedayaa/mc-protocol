@@ -35,9 +35,12 @@ type BaseClient struct {
 	lastRefresh int64
 	sessionID   int32
 	cachedToken int32
+	// options
+
+	timeout time.Duration
 }
 
-func NewQueryClient(server string) (Client, error) {
+func NewQueryClient(server string, ops ...Option) (Client, error) {
 	c := &BaseClient{}
 	c.server = server
 	addr, err := net.ResolveUDPAddr("udp", server)
@@ -50,7 +53,9 @@ func NewQueryClient(server string) (Client, error) {
 		return nil, err
 	}
 	c.conn = conn
-
+	for _, v := range append(defaultOptions, ops...) {
+		v.apply(c)
+	}
 	return c, nil
 }
 
@@ -68,7 +73,7 @@ func (b *BaseClient) RefreshToken() error {
 		return err
 	}
 	hresp := &HandleShakeResponse{}
-	err = hresp.encode(resp)
+	err = hresp.decode(resp)
 	if err != nil {
 		return err
 	}
@@ -91,7 +96,7 @@ func (b *BaseClient) FullRequest() (*FullResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = res.encode(recv)
+	err = res.decode(recv)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +109,7 @@ func (b *BaseClient) BasicRequest() (*BasicResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = res.encode(recv)
+	err = res.decode(recv)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +122,7 @@ func (b *BaseClient) HandShake() (*HandleShakeResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = res.encode(recv)
+	err = res.decode(recv)
 	if err != nil {
 		return nil, err
 	}
@@ -125,12 +130,16 @@ func (b *BaseClient) HandShake() (*HandleShakeResponse, error) {
 }
 
 func (b *BaseClient) sendAndRecv(qt queryType, isFull bool) ([]byte, error) {
-
 	var (
 		err  error
 		pkg  Package
 		recv []byte
 	)
+	err = b.conn.SetDeadline(time.Now().Add(b.timeout)) // set timeout
+	if err != nil {
+		return nil, err
+	}
+
 	if b.IsTokenExpire() && qt != HandShakeType {
 		err = b.RefreshToken()
 		if err != nil {
@@ -139,9 +148,9 @@ func (b *BaseClient) sendAndRecv(qt queryType, isFull bool) ([]byte, error) {
 	}
 
 	if isFull {
-		pkg = NewFullPackage(b, qt)
+		pkg = newFullPackage(b, qt)
 	} else {
-		pkg = NewPackage(b, qt)
+		pkg = newPackage(b, qt)
 	}
 	err = b.send(pkg)
 	if err != nil {

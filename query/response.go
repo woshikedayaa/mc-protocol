@@ -10,7 +10,7 @@ import (
 )
 
 type Response interface {
-	encode([]byte) error
+	decode([]byte) error
 
 	JSON() ([]byte, error)
 	SessionID() int32
@@ -37,7 +37,7 @@ func (e *EmptyResponse) IsStatQuery() bool {
 	return e.typ == StatType
 }
 
-func (e *EmptyResponse) encode(bs []byte) error {
+func (e *EmptyResponse) decode(bs []byte) error {
 	if len(bs) < 5 {
 		return errors.New("response bytes length to short")
 	}
@@ -81,7 +81,7 @@ type HandleShakeResponse struct {
 }
 
 // Encode BasicResponse
-func (r *BasicResponse) encode(bs []byte) error {
+func (r *BasicResponse) decode(bs []byte) error {
 	var (
 		lastRead = 5 // start
 		n        = len(bs)
@@ -109,24 +109,24 @@ func (r *BasicResponse) encode(bs []byte) error {
 	r.port = int(binary.LittleEndian.Uint16(find())) // 这里应该只读2个Byte
 	lastRead = tempLastRead + 2
 	r.ip = string(find())
-	return r.EmptyResponse.encode(bs)
+	return r.EmptyResponse.decode(bs)
 }
 
-func (r *FullResponse) encode(bs []byte) error {
+func (r *FullResponse) decode(bs []byte) error {
 	Skip1 := 1 + 4 + 11
 	Skip2 := 10
 	Skip2 += r.parseKVString(bs[Skip1:]) + Skip1
 	r.parsePlayerString(bs[Skip2:])
-	return r.EmptyResponse.encode(bs)
+	return r.EmptyResponse.decode(bs)
 }
 
-func (r *HandleShakeResponse) encode(bs []byte) error {
+func (r *HandleShakeResponse) decode(bs []byte) error {
 	buffer := bytes.NewBuffer(bs[5:])
 	token, err := buffer.ReadBytes(0x00)
 	if err != nil {
 		return err
 	}
-	err = r.EmptyResponse.encode(bs)
+	err = r.EmptyResponse.decode(bs)
 	if err != nil {
 		return err
 	}
