@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	client, err := rcon.NewRconClient("127.0.0.1:5001")
+	client, err := rcon.NewRconClient("127.0.0.1:5002")
 	// // with TimeOut. default 10s
 	// client, err := rcon.NewRconClient("debian:5001", rcon.Options.WithTimeOut(10*time.Second))
 	if err != nil {
