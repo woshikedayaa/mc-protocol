@@ -6,7 +6,7 @@ import (
 
 func (r *BasicResponse) JSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
-		"sessionID": r.SessionID(),
+		"sessionID": r.sessionID,
 		"queryType": r.typ,
 		"gameType":  r.gameType,
 		"motd":      r._MOTD,
@@ -48,7 +48,7 @@ func (r *BasicResponse) HostIP() string {
 
 func (r *FullResponse) JSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
-		"sessionID": r.SessionID(),
+		"sessionID": r.sessionID,
 		"queryType": r.typ,
 		"gameType":  r.gameType,
 		"motd":      r._MOTD,
@@ -111,7 +111,7 @@ func (r *FullResponse) Plugins() string {
 
 func (r *HandleShakeResponse) JSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
-		"sessionID": r.SessionID(),
+		"sessionID": r.sessionID,
 		"queryType": r.typ,
 		"token":     r.token,
 	})

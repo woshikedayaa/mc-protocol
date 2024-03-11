@@ -1,0 +1,15 @@
+services:
+  server:
+    restart: "unless-stopped"
+    ports:
+      - 5001:5001/udp
+      - 5002:5002/tcp
+    environment:
+      - EULA=true
+      - ENABLE_QUERY=true
+      - ENABLE_RCON=true
+      - QUERY_PORT=5001
+      - RCON_PORT=5002
+      - RCON_PASSWORD=123456
+      - GUI=false
+    image: itzg/minecraft-server

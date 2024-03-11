@@ -198,7 +198,7 @@ func NewRconClient(server string, ops ...Option) (Client, error) {
 	var (
 		conn net.Conn
 		err  error
-		c    *BaseClient
+		c    = &BaseClient{}
 	)
 	conn, err = net.Dial("tcp", server)
 	if err != nil {

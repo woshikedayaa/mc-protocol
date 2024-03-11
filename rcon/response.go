@@ -16,6 +16,26 @@ type Response struct {
 	body ResponseBody
 }
 
+func (resp *Response) ID() int32 {
+	return resp.id
+}
+
+func (resp *Response) Size() int32 {
+	return resp.size
+}
+
+func (resp *Response) Type() PackageType {
+	return resp.typ
+}
+
+func (resp *Response) Body() ResponseBody {
+	return resp.body
+}
+
+func (resp *Response) String() string {
+	return resp.body.String()
+}
+
 func (b ResponseBody) String() string {
 	return string(b)
 }

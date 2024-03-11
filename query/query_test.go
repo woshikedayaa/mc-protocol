@@ -55,3 +55,39 @@ func TestBaseClient_BasicRequest(t *testing.T) {
 	}
 	fmt.Println(string(json))
 }
+
+func BenchmarkBaseClient_BasicRequest(b *testing.B) {
+	client, err := NewQueryClient("debian:5001")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer client.Close()
+	err = client.RefreshToken()
+	if err != nil {
+		b.Fatal(err)
+	}
+	for i := 0; i < b.N; i++ {
+		_, err = client.BasicRequest()
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkBaseClient_FullRequest(b *testing.B) {
+	client, err := NewQueryClient("debian:5001")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer client.Close()
+	err = client.RefreshToken()
+	if err != nil {
+		b.Fatal(err)
+	}
+	for i := 0; i < b.N; i++ {
+		_, err = client.FullRequest()
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
