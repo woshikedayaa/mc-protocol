@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+// debian is author's local loop addr ,same as 127.0.0.1
+
 func TestBaseClient_New(t *testing.T) {
 	client, err := NewQueryClient("debian:5001")
 	if err != nil {

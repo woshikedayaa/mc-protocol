@@ -6,6 +6,7 @@ Golang's implementation of modern MC related Procotol
 
 - [x] Query
 - [x] Rcon
+- [ ] Ping
 - [ ] Client
 
 # Quick-start

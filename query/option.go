@@ -3,17 +3,27 @@ package query
 import "time"
 
 type Option func(client *BaseClient)
-type OptionsType struct{}
+type optionsType struct{}
 
 func (op Option) apply(c *BaseClient) {
 	op(c)
 }
 
-var Options OptionsType
-var defaultOptions = []Option{Options.WithTimeOut(10 * time.Second)}
+var Options optionsType
 
-func (OptionsType) WithTimeOut(duration time.Duration) Option {
+var defaultOptions = []Option{
+	Options.WithTimeOut(10 * time.Second),
+	Options.WithSpecialNetwork("udp"),
+}
+
+func (optionsType) WithTimeOut(duration time.Duration) Option {
 	return func(client *BaseClient) {
 		client.timeout = duration
+	}
+}
+
+func (optionsType) WithSpecialNetwork(network string) Option {
+	return func(client *BaseClient) {
+		client.network = network
 	}
 }

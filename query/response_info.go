@@ -4,6 +4,13 @@ import (
 	"encoding/json"
 )
 
+func (e *EmptyResponse) JSON() ([]byte, error) {
+	return json.Marshal(map[string]any{
+		"sessionID": e.SessionID(),
+		"queryType": int(e.typ), // 9 for handshake, 0 for stat
+	})
+}
+
 func (r *BasicResponse) JSON() ([]byte, error) {
 	return json.Marshal(map[string]any{
 		"sessionID": r.sessionID,

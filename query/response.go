@@ -3,17 +3,22 @@ package query
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"io"
 	"strconv"
 )
 
 type Response interface {
+
+	// decode bind a byte array to Response
 	decode([]byte) error
 
+	// JSON return jsonify data
 	JSON() ([]byte, error)
+
+	// SessionID return the response's sessionID
 	SessionID() int32
+
 	IsStatQuery() bool
 }
 
@@ -22,19 +27,12 @@ type EmptyResponse struct {
 	sessionID int32
 }
 
-func (e *EmptyResponse) JSON() ([]byte, error) {
-	return json.Marshal(map[string]any{
-		"sessionID": e.SessionID(),
-		"queryType": int(e.typ), // 9 for handshake, 0 for stat
-	})
-}
-
 func (e *EmptyResponse) SessionID() int32 {
 	return e.sessionID
 }
 
 func (e *EmptyResponse) IsStatQuery() bool {
-	return e.typ == StatType
+	return e.typ == StatQueryType
 }
 
 func (e *EmptyResponse) decode(bs []byte) error {
@@ -68,7 +66,7 @@ type FullResponse struct {
 	maxPlayer  int
 	port       int
 	ip         string // alias hostname
-	// extend
+	// extend than BasicResponse
 	plugins string
 	gameID  string
 	player  []string
@@ -80,7 +78,6 @@ type HandleShakeResponse struct {
 	token int32
 }
 
-// Encode BasicResponse
 func (r *BasicResponse) decode(bs []byte) error {
 	var (
 		lastRead = 5 // start
@@ -113,26 +110,27 @@ func (r *BasicResponse) decode(bs []byte) error {
 }
 
 func (r *FullResponse) decode(bs []byte) error {
-	Skip1 := 1 + 4 + 11
-	Skip2 := 10
+	Skip1 := 1 + 4 + 11 // head and padding
+	Skip2 := 10         // padding-2
 	Skip2 += r.parseKVString(bs[Skip1:]) + Skip1
 	r.parsePlayerString(bs[Skip2:])
 	return r.EmptyResponse.decode(bs)
 }
 
 func (r *HandleShakeResponse) decode(bs []byte) error {
-	buffer := bytes.NewBuffer(bs[5:])
-	token, err := buffer.ReadBytes(0x00)
-	if err != nil {
-		return err
-	}
+	var err error
 	err = r.EmptyResponse.decode(bs)
 	if err != nil {
 		return err
 	}
 
 	if r.IsStatQuery() {
-		return errors.New("except QueryType is HandShakeType,but current QueryType is StatType")
+		return errors.New("except QueryType is HandShakeType,but current QueryType is StatQueryType")
+	}
+	buffer := bytes.NewBuffer(bs[5:])
+	token, err := buffer.ReadBytes(0x00)
+	if err != nil {
+		return err
 	}
 
 	r.token = r.parseTokenString(string(token))
@@ -144,6 +142,7 @@ func (r *HandleShakeResponse) parseTokenString(s string) int32 {
 	return int32(atoi)
 }
 
+// parseKVString return the length of KVString
 func (r *FullResponse) parseKVString(bs []byte) int {
 	n := len(bs)
 	var lastRead int
@@ -190,7 +189,7 @@ func (r *FullResponse) parsePlayerString(bs []byte) {
 		buf = bytes.NewBuffer(bs)
 		s   = ""
 	)
-	for !errors.Is(err, io.EOF) || len(s) != 0 {
+	for len(s) != 0 || !errors.Is(err, io.EOF) {
 		s, err = buf.ReadString(0x00)
 		if len(s) != 0 {
 			r.player = append(r.player, s)
@@ -203,6 +202,7 @@ func (r *FullResponse) parsePlayerString(bs []byte) {
 	}
 }
 
+// ascii code to int
 func byteArrayToInt(bs []byte) (ans int) {
 	for i := 0; i < len(bs); i++ {
 		ans = ans*10 + int(bs[i]-'0')
