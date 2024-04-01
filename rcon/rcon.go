@@ -1,3 +1,5 @@
+// Package rcon
+// It was completed under document https://wiki.vg/RCON
 package rcon
 
 import (
@@ -14,11 +16,26 @@ var (
 )
 
 type Client interface {
+
+	// Close the RCON client
 	Close() error
+
+	// SendCommand will send the command to the target server
+	// it will return a Response and an error
 	SendCommand(command string) (*Response, error)
+
+	// Auth will auth with pwd
+	// if success, it will return nil
 	Auth(pwd string) error
+
+	// ClientID return the current ClientID
+	// see global value uniqueID
 	ClientID() int32
+
+	// Connection will return the tcp connection
 	Connection() net.Conn
+
+	// Reconnect will create a new tcp connection
 	Reconnect() error
 }
 
@@ -32,19 +49,11 @@ type BaseClient struct {
 	network string
 }
 
+// encode payload to an available package
+// PackageType is defined in response.go
 func encode(payload string, pt PackageType) ([]byte, error) {
 	size := int32(4 + 4 + len(payload) + 2)
 	buf := bytes.NewBuffer([]byte{})
-	// use an array to extend in the future
-	/*
-		Copy from : https://wiki.vg/RCON
-		Field name	Field-type	Notes
-		Length		int32		Length of remainder of packet
-		Request-ID	int32		Client-generated ID
-		Type		int32		3 for login, 2 to run a command, 0 for a multi-packet response
-		Payload		byte[]		NULL-terminated ASCII text
-		1-byte pad	byte		NULL
-	*/
 	writeArray := []interface{}{
 		size, uniqueID.Load(), pt, []byte(payload), []byte{0, 0},
 	}
@@ -58,6 +67,7 @@ func encode(payload string, pt PackageType) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// decode the response from target server to a Response
 func decode(bs []byte) (*Response, error) {
 	resp := &Response{}
 	buffer := bytes.NewBuffer(bs)
@@ -81,6 +91,9 @@ func decode(bs []byte) (*Response, error) {
 	return resp, nil
 }
 
+// recv
+// at first , read 4 byte to get the length of this package
+// and read-all from the connection
 func (b *BaseClient) recv() ([]byte, error) {
 	var (
 		res = make([]byte, 4) // 4 for length(int32)
@@ -188,17 +201,19 @@ func (b *BaseClient) Reconnect() error {
 		conn net.Conn
 		err  error
 	)
-	conn, err = net.Dial("tcp", b.server)
+	conn, err = net.Dial(b.network, b.server)
 	if err != nil {
 		return err
 	}
-	if b.conn.Close() != nil {
-		return errors.New("error when close old TCP connection")
-	}
+	_ = b.conn.Close()
 	b.conn = conn
 	return nil
 }
 
+// NewRconClient will enable the ops
+// create a new tcp connection for RCON
+// notice: it will not authorize to the target server
+// Use: Client.Auth  to authorize to the target server
 func NewRconClient(server string, ops ...Option) (Client, error) {
 	var (
 		conn net.Conn

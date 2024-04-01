@@ -6,7 +6,7 @@ type ResponseBody []byte
 const (
 	TypeAuthorize    PackageType = 3
 	TypeCommand      PackageType = 2
-	TypeMultiPackage PackageType = 0
+	TypeMultiPackage PackageType = 0 // not implemented
 )
 
 type Response struct {

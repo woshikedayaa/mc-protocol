@@ -1,5 +1,5 @@
 // Package query
-// It was completed under the document https://wiki.vg/Query
+// It was completed under  document https://wiki.vg/Query
 package query
 
 import (
