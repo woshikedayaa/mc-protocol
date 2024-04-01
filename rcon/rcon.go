@@ -29,6 +29,7 @@ type BaseClient struct {
 	// options
 
 	timeout time.Duration
+	network string
 }
 
 func encode(payload string, pt PackageType) ([]byte, error) {
@@ -200,15 +201,16 @@ func NewRconClient(server string, ops ...Option) (Client, error) {
 		err  error
 		c    = &BaseClient{}
 	)
-	conn, err = net.Dial("tcp", server)
+	for _, v := range append(defaultOptions, ops...) {
+		v.apply(c)
+	}
+	conn, err = net.Dial(c.network, server)
 	if err != nil {
 		return nil, err
 	}
 	c.conn = conn
 	c.server = server
 	c.isAuth = false
-	for _, v := range append(defaultOptions, ops...) {
-		v.apply(c)
-	}
+
 	return c, nil
 }

@@ -29,17 +29,17 @@ func main() {
 	// with TimeOut. default 10s
 	// client, err := query.NewQueryClient("127.0.0.1:5001",query.Options.WithTimeOut(10 * time.Second))
 	if err != nil {
-            panic(err)
+        panic(err)
 	}
 	defer client.Close() // optional
 	response, err := client.BasicRequest()
 	if err != nil {
-		panic(err)
+        panic(err)
 	}
 	// dump
 	json, err := response.JSON()
 	if err != nil {
-		panic(err)
+        panic(err)
 	}
 	fmt.Println(string(json))
 }
@@ -54,16 +54,16 @@ func main() {
     // with TimeOut. default 10s
     // client, err := rcon.NewRconClient("debian:5001", rcon.Options.WithTimeOut(10 * time.Second))
     if err != nil {
-    panic(err)
+        panic(err)
     }
     defer client.Close() // must
     err = client.Auth("123456")
     if err != nil {
-    panic(err)
+        panic(err)
     }
     response, err := client.SendCommand("list")
     if err != nil {
-    panic(err)
+        panic(err)
     }
     fmt.Println(response)
 }
