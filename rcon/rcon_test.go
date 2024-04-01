@@ -26,7 +26,7 @@ func TestBaseClient_Auth(t *testing.T) {
 }
 
 func TestBaseClient_SendCommand(t *testing.T) {
-	client, err := NewRconClient("debian:25575")
+	client, err := NewRconClient("debian:5002")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -83,17 +83,21 @@ func decode(bs []byte) (*Response, error) {
 
 func (b *BaseClient) recv() ([]byte, error) {
 	var (
-		bufSize = 4096
-		buf     = make([]byte, bufSize)
-		err     error
-		n       int
+		res = make([]byte, 4) // 4 for length(int32)
+		err error
 	)
-	n, err = b.conn.Read(buf)
+	_, err = b.conn.Read(res)
 	if err != nil {
 		return nil, err
 	}
-	// avoid memory leak
-	return append([]byte{}, buf[:n]...), nil
+	length := binary.LittleEndian.Uint32(res)
+	res = make([]byte, length+4)
+	binary.LittleEndian.PutUint32(res, length)
+	_, err = b.conn.Read(res[4:])
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func (b *BaseClient) send(bs []byte) error {
