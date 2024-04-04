@@ -6,7 +6,7 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	client, err := NewRconClient("debian:25575")
+	client, err := NewRconClient("127.0.0.1:5002")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -14,7 +14,7 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestBaseClient_Auth(t *testing.T) {
-	client, err := NewRconClient("debian:25575")
+	client, err := NewRconClient("127.0.0.1:5002")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func TestBaseClient_Auth(t *testing.T) {
 }
 
 func TestBaseClient_SendCommand(t *testing.T) {
-	client, err := NewRconClient("debian:5002")
+	client, err := NewRconClient("127.0.0.1:5002")
 	if err != nil {
 		t.Fatal(err)
 	}

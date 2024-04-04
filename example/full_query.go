@@ -14,7 +14,7 @@ func main() {
 		panic(err)
 	}
 	defer client.Close()
-	response, err := client.BasicRequest()
+	response, err := client.FullRequest()
 	if err != nil {
 		panic(err)
 	}

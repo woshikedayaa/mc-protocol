@@ -13,69 +13,59 @@ type Response interface {
 	// decode bind a byte array to Response
 	decode([]byte) error
 
-	// JSON return jsonify data
-	JSON() ([]byte, error)
-
-	// SessionID return the response's sessionID
+	// SessionID return the response's session
 	SessionID() int32
 
 	IsStatQuery() bool
 }
 
 type EmptyResponse struct {
-	typ       queryType
-	sessionID int32
+	Typ     queryType `json:"Typ"`
+	Session int32     `json:"session"`
 }
 
 func (e *EmptyResponse) SessionID() int32 {
-	return e.sessionID
+	return e.Session
 }
 
 func (e *EmptyResponse) IsStatQuery() bool {
-	return e.typ == StatQueryType
+	return e.Typ == StatQueryType
 }
 
 func (e *EmptyResponse) decode(bs []byte) error {
 	if len(bs) < 5 {
 		return errors.New("response bytes length to short")
 	}
-	// parse the typ and sessionID
-	e.typ = queryType(bs[0])
+	// parse the Typ and session
+	e.Typ = queryType(bs[0])
 	// big-Ending
-	e.sessionID = int32(uint32(bs[1])<<24 | uint32(bs[2])<<16 | uint32(bs[3])<<8 | uint32(bs[4]))
+	e.Session = int32(uint32(bs[1])<<24 | uint32(bs[2])<<16 | uint32(bs[3])<<8 | uint32(bs[4]))
 	return nil
 }
 
 type BasicResponse struct {
 	EmptyResponse
-	_MOTD      string
-	gameType   string
-	_map       string
-	curPlayers int // current-player
-	maxPlayer  int
-	port       int
-	ip         string // alias hostname
+	MOTD       string `json:"motd"`
+	GameType   string `json:"gameType"`
+	Map        string `json:"map"`
+	NumPlayers int    `json:"numPlayers"`
+	MaxPlayer  int    `json:"maxPlayer"`
+	Port       int    `json:"port"`
+	HostName   string `json:"hostName"`
 }
 
 type FullResponse struct {
-	EmptyResponse
-	_MOTD      string
-	gameType   string
-	_map       string
-	curPlayers int // current-player
-	maxPlayer  int
-	port       int
-	ip         string // alias hostname
+	BasicResponse
 	// extend than BasicResponse
-	plugins string
-	gameID  string
-	player  []string
-	version string
+	Plugins string   `json:"plugins"`
+	GameID  string   `json:"gameID"`
+	Players []string `json:"players"`
+	Version string   `json:"version"`
 }
 
 type HandleShakeResponse struct {
 	EmptyResponse
-	token int32
+	Token int32 `json:"token"`
 }
 
 func (r *BasicResponse) decode(bs []byte) error {
@@ -97,15 +87,15 @@ func (r *BasicResponse) decode(bs []byte) error {
 			return nil
 		}
 	)
-	r._MOTD = string(find())
-	r.gameType = string(find())
-	r._map = string(find())
-	r.curPlayers = byteArrayToInt(find())
-	r.maxPlayer = byteArrayToInt(find())
+	r.MOTD = string(find())
+	r.GameType = string(find())
+	r.Map = string(find())
+	r.NumPlayers = byteArrayToInt(find())
+	r.MaxPlayer = byteArrayToInt(find())
 	tempLastRead := lastRead
-	r.port = int(binary.LittleEndian.Uint16(find())) // 这里应该只读2个Byte
+	r.Port = int(binary.LittleEndian.Uint16(find())) // 这里应该只读2个Byte
 	lastRead = tempLastRead + 2
-	r.ip = string(find())
+	r.HostName = string(find())
 	return r.EmptyResponse.decode(bs)
 }
 
@@ -133,7 +123,7 @@ func (r *HandleShakeResponse) decode(bs []byte) error {
 		return err
 	}
 
-	r.token = r.parseTokenString(string(token))
+	r.Token = r.parseTokenString(string(token))
 	return nil
 }
 
@@ -167,16 +157,16 @@ func (r *FullResponse) parseKVString(bs []byte) int {
 		return nil
 	}
 
-	r._MOTD = string(find())
-	r.gameType = string(find())
-	r.gameID = string(find())
-	r.version = string(find())
-	r.plugins = string(find())
-	r._map = string(find())
-	r.curPlayers = byteArrayToInt(find())
-	r.maxPlayer = byteArrayToInt(find())
-	r.port = byteArrayToInt(find())
-	r.ip = string(find())
+	r.MOTD = string(find())
+	r.GameType = string(find())
+	r.GameID = string(find())
+	r.Version = string(find())
+	r.Plugins = string(find())
+	r.Map = string(find())
+	r.NumPlayers = byteArrayToInt(find())
+	r.MaxPlayer = byteArrayToInt(find())
+	r.Port = byteArrayToInt(find())
+	r.HostName = string(find())
 
 	for len(find()) != 0 {
 	} // find last
@@ -192,11 +182,11 @@ func (r *FullResponse) parsePlayerString(bs []byte) {
 	for len(s) != 0 || !errors.Is(err, io.EOF) {
 		s, err = buf.ReadString(0x00)
 		if len(s) != 0 {
-			r.player = append(r.player, s)
+			r.Players = append(r.Players, s)
 		}
 	}
 	// avoid memory-leak
-	r.player = append([]string{}, r.player[:len(r.player)-1]...)
+	r.Players = append([]string{}, r.Players[:len(r.Players)-1]...)
 	if err != nil && !errors.Is(err, io.EOF) {
 		panic(err)
 	}

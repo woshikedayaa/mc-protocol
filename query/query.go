@@ -16,7 +16,7 @@ const (
 type queryType byte
 
 const (
-	// HandShakeType for get token
+	// HandShakeType for get Token
 	// see Client.RefreshToken
 	HandShakeType queryType = 9
 	// StatQueryType for get server stats
@@ -24,24 +24,24 @@ const (
 )
 
 type Client interface {
-	// Token return current token.
-	// warning: token maybe has been expired.
-	// you can use RefreshToken to refresh token.
-	// use IsTokenExpire to check does token expired.
+	// Token return current Token.
+	// warning: Token maybe has been expired.
+	// you can use RefreshToken to refresh Token.
+	// use IsTokenExpire to check does Token expired.
 	Token() int32
 
 	RefreshToken() error
 
-	// IsTokenExpire return true when token has expired.
+	// IsTokenExpire return true when Token has expired.
 	IsTokenExpire() bool
 
-	// SessionID return the client unique-sessionID
+	// SessionID return the client unique-session
 	// usually , it is time-based.
 	// see NewQueryClient
 	SessionID() int32
 
 	// FullRequest return a full server stat,
-	// compared with BasicRequest, there are more players,plugins,version and gameID.
+	// compared with BasicRequest, there are more players,Plugins,Version and GameID.
 	// see FullResponse and BasicResponse
 	FullRequest() (*FullResponse, error)
 
@@ -49,8 +49,8 @@ type Client interface {
 	// effective than FullRequest
 	BasicRequest() (*BasicResponse, error)
 
-	// HandShakeRequest to get challenge-token
-	// about challenge-token: https://wiki.vg/Query
+	// HandShakeRequest to get challenge-Token
+	// about challenge-Token: https://wiki.vg/Query
 	HandShakeRequest() (*HandleShakeResponse, error)
 
 	// Close is optional.
@@ -111,7 +111,7 @@ func (b *BaseClient) RefreshToken() error {
 		return err
 	}
 	b.lastRefresh = time.Now().Unix()
-	b.cachedToken = hresp.token
+	b.cachedToken = hresp.Token
 	return nil
 }
 

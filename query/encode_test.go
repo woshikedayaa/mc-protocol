@@ -54,13 +54,13 @@ func getBasicResponseTestExample() []byte {
 }
 
 func dumpBasic(resp *BasicResponse) {
-	fmt.Println("queryType", resp.EmptyResponse.typ)
-	fmt.Println("sessionID", resp.EmptyResponse.sessionID)
+	fmt.Println("queryType", resp.EmptyResponse.Typ)
+	fmt.Println("session", resp.EmptyResponse.Session)
 	fmt.Println("MOTD", resp._MOTD)
-	fmt.Println("gameType", resp.gameType)
+	fmt.Println("GameType", resp.gameType)
 	fmt.Println("map", resp._map)
 	fmt.Println("numPlayer", resp.curPlayers)
-	fmt.Println("maxPlayer", resp.maxPlayer)
-	fmt.Println("port", resp.port)
-	fmt.Println("ip", resp.ip)
+	fmt.Println("MaxPlayer", resp.maxPlayer)
+	fmt.Println("Port", resp.port)
+	fmt.Println("HostName", resp.ip)
 }

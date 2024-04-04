@@ -1,14 +1,15 @@
 package query
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 )
 
-// debian is author's local loop addr ,same as 127.0.0.1
+// 127.0.0.1 is author's local loop addr ,same as 127.0.0.1
 
 func TestBaseClient_New(t *testing.T) {
-	client, err := NewQueryClient("debian:5001")
+	client, err := NewQueryClient("127.0.0.1:5001")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -17,15 +18,15 @@ func TestBaseClient_New(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	json, err := response.JSON()
+	j, err := json.Marshal(response)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(string(json))
+	fmt.Println(string(j))
 }
 
 func TestBaseClient_FullRequest(t *testing.T) {
-	client, err := NewQueryClient("debian:5001")
+	client, err := NewQueryClient("127.0.0.1:5001")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,15 +35,15 @@ func TestBaseClient_FullRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	json, err := response.JSON()
+	j, err := json.Marshal(response)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(string(json))
+	fmt.Println(string(j))
 }
 
 func TestBaseClient_BasicRequest(t *testing.T) {
-	client, err := NewQueryClient("debian:5001")
+	client, err := NewQueryClient("127.0.0.1:5001")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,15 +52,15 @@ func TestBaseClient_BasicRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	json, err := response.JSON()
+	j, err := json.Marshal(response)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(string(json))
+	fmt.Println(string(j))
 }
 
 func BenchmarkBaseClient_BasicRequest(b *testing.B) {
-	client, err := NewQueryClient("debian:5001")
+	client, err := NewQueryClient("127.0.0.1:5001")
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -77,7 +78,7 @@ func BenchmarkBaseClient_BasicRequest(b *testing.B) {
 }
 
 func BenchmarkBaseClient_FullRequest(b *testing.B) {
-	client, err := NewQueryClient("debian:5001")
+	client, err := NewQueryClient("127.0.0.1:5001")
 	if err != nil {
 		b.Fatal(err)
 	}
