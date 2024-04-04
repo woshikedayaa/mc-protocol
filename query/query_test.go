@@ -6,8 +6,6 @@ import (
 	"testing"
 )
 
-// 127.0.0.1 is author's local loop addr ,same as 127.0.0.1
-
 func TestBaseClient_New(t *testing.T) {
 	client, err := NewQueryClient("127.0.0.1:5001")
 	if err != nil {

@@ -71,11 +71,11 @@ func encode(payload string, pt PackageType) ([]byte, error) {
 func decode(bs []byte) (*Response, error) {
 	resp := &Response{}
 	buffer := bytes.NewBuffer(bs)
-	err := binary.Read(buffer, binary.LittleEndian, &resp.size)
+	err := binary.Read(buffer, binary.LittleEndian, &resp.Size)
 	if err != nil {
 		return nil, err
 	}
-	err = binary.Read(buffer, binary.LittleEndian, &resp.id)
+	err = binary.Read(buffer, binary.LittleEndian, &resp.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (b *BaseClient) Auth(pwd string) error {
 	if err != nil {
 		return err
 	}
-	if response.id == -1 {
+	if response.Id == -1 {
 		return errors.New("auth fail with password=" + pwd)
 	}
 
