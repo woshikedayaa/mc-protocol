@@ -10,10 +10,10 @@ const (
 )
 
 type Response struct {
-	Id   int32
-	Size int32
-	Typ  PackageType
-	Body ResponseBody
+	Id   int32        `json:"id"`
+	Size int32        `json:"size"`
+	Typ  PackageType  `json:"type"`
+	Body ResponseBody `json:"body"`
 }
 
 func (resp *Response) String() string {

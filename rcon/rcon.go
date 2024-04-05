@@ -79,12 +79,12 @@ func decode(bs []byte) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = binary.Read(buffer, binary.LittleEndian, &resp.typ)
+	err = binary.Read(buffer, binary.LittleEndian, &resp.Typ)
 	if err != nil {
 		return nil, err
 	}
-	resp.body = make([]byte, len(bs)-12)
-	err = binary.Read(buffer, binary.LittleEndian, &resp.body)
+	resp.Body = make([]byte, len(bs)-12)
+	err = binary.Read(buffer, binary.LittleEndian, &resp.Body)
 	if err != nil {
 		return nil, err
 	}
