@@ -34,9 +34,10 @@ func (ot *optionType) check(c *Client) error {
 
 var Options optionType
 
+// for default options
 var defaultOptions = []option{
 	Options.WithNetwork("tcp"),
-	Options.WithSpecialVersion("1.18.2"),
+	Options.WithSpecialVersion("1.7"),
 	Options.WithTimeout(10 * time.Second),
 }
 

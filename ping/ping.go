@@ -22,5 +22,6 @@ func NewClient(server string, ops ...option) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	c.impl = chooseImpl(c.op.version)
+	return c, nil
 }

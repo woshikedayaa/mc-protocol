@@ -28,16 +28,20 @@ func newVersion(s string) (version, error) {
 	return v, nil
 }
 
-func (v *version) Major() int {
+func (v version) Major() int {
 	return v.ver[0]
 }
 
-func (v *version) Minor() int {
+func (v version) Minor() int {
 	return v.ver[1]
 }
 
-func (v *version) Patch() int {
+func (v version) Patch() int {
 	return v.ver[2]
+}
+
+func (v version) String() string {
+	return strings.Join([]string{strconv.Itoa(v.Major()), strconv.Itoa(v.Minor()), strconv.Itoa(v.Patch())}, ".")
 }
 
 var (
