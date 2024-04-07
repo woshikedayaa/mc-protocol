@@ -6,6 +6,8 @@ type Client struct {
 	impl IPing
 	conn net.Conn
 	op   *optionType
+
+	server string
 }
 
 func NewClient(server string, ops ...option) (*Client, error) {
@@ -13,6 +15,7 @@ func NewClient(server string, ops ...option) (*Client, error) {
 		c   = new(Client)
 		err error
 	)
+	c.server = server
 	c.op.ops = ops
 	err = c.op.check(c)
 	if err != nil {
