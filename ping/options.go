@@ -2,6 +2,7 @@ package ping
 
 import (
 	"errors"
+	"github.com/woshikedayaa/mc-protocol/internal/ver"
 	"reflect"
 	"slices"
 	"time"
@@ -15,7 +16,7 @@ type optionType struct {
 	ops           []option
 	timeout       time.Duration
 	versionString string
-	version       version
+	version       ver.version
 	network       string
 }
 
@@ -25,7 +26,7 @@ func (ot *optionType) check(c *Client) error {
 		ops[i].apply(c)
 	}
 	var err, err2 error
-	ot.version, err2 = newVersion(ot.versionString)
+	ot.version, err2 = ver.newVersion(ot.versionString)
 	if err2 != nil {
 		err = errors.Join(err, err2)
 	}

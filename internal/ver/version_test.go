@@ -1,4 +1,4 @@
-package ping
+package ver
 
 import (
 	"fmt"

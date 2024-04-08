@@ -1,6 +1,9 @@
 package ping
 
-import "net"
+import (
+	"github.com/woshikedayaa/mc-protocol/internal/ver"
+	"net"
+)
 
 type Client struct {
 	impl IPing
@@ -26,6 +29,6 @@ func NewClient(server string, ops ...option) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.impl = chooseImpl(c.op.version)
+	c.impl = ver.chooseImpl(c.op.version)
 	return c, nil
 }
