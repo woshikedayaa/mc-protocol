@@ -1,6 +1,7 @@
 package ver
 
 var pvnTable = map[string]int{
+	"":       0,
 	"1.20.4": 765,
 	"1.20.3": 765,
 	"1.20.2": 764,

@@ -11,7 +11,7 @@ import (
 
 type c17 struct{ cNoop }
 
-func (c *c17) Ping(conn net.Conn) (Response, error) {
+func (c *c17) StatusRequest(conn net.Conn) (Response, error) {
 	if !c.IsHandShaken() {
 		return nil, errors.New("before ping, handshake required")
 	}
@@ -30,7 +30,7 @@ func (c *c17) Ping(conn net.Conn) (Response, error) {
 	return nil, nil
 }
 
-func (c *c17) GetLatency(conn net.Conn) (int, error) {
+func (c *c17) Latency(conn net.Conn) (int, error) {
 	//TODO implement me
 	panic("implement me")
 }

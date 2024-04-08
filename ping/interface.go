@@ -2,6 +2,7 @@ package ping
 
 import (
 	"github.com/woshikedayaa/mc-protocol/internal/pkgb"
+	"github.com/woshikedayaa/mc-protocol/internal/ver"
 	"net"
 )
 
@@ -11,10 +12,12 @@ type Response interface {
 }
 
 type IPing interface {
-	Ping(conn net.Conn) (Response, error)
-	GetLatency(conn net.Conn) (int, error)
+	StatusRequest(conn net.Conn) (Response, error)
+	Latency(conn net.Conn) (int, error)
+
 	GetPackage() *pkgb.PKG
 	HandShake(conn net.Conn) error
 	Close(conn net.Conn) error
 	IsHandShaken() bool
+	SetVersion(version ver.Version)
 }

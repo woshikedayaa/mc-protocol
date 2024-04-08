@@ -8,7 +8,7 @@ import (
 type Client struct {
 	impl IPing
 	conn net.Conn
-	op   *optionType
+	op   *options
 
 	server string
 }
@@ -19,7 +19,7 @@ func NewClient(server string, ops ...option) (*Client, error) {
 		err error
 	)
 	c.server = server
-	c.op = new(optionType)
+	c.op = new(options)
 	c.op.ops = ops
 	err = c.op.check(c)
 	if err != nil {
@@ -29,6 +29,18 @@ func NewClient(server string, ops ...option) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.impl = ver.chooseImpl(c.op.version)
+	c.impl = chooseImpl(c.op.version)
 	return c, nil
+}
+
+func chooseImpl(version ver.Version) IPing {
+	if version.Minor() >= 7 {
+		return new(c17)
+	} else if version.Minor() >= 6 {
+		return new(c16)
+	} else if version.Minor() >= 4 {
+		return new(c1415)
+	} else {
+		return new(cNoop)
+	}
 }

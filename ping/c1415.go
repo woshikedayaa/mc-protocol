@@ -7,12 +7,12 @@ import (
 
 type c1415 struct{ cNoop }
 
-func (c *c1415) Ping(conn net.Conn) (Response, error) {
+func (c *c1415) StatusRequest(conn net.Conn) (Response, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (c *c1415) GetLatency(conn net.Conn) (int, error) {
+func (c *c1415) Latency(conn net.Conn) (int, error) {
 	//TODO implement me
 	panic("implement me")
 }
