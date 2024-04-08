@@ -4,6 +4,7 @@ services:
     ports:
       - 5001:5001/udp
       - 5002:5002/tcp
+      - 5000:5000/tcp
     environment:
       - EULA=true
       - ENABLE_QUERY=true
@@ -12,4 +13,5 @@ services:
       - RCON_PORT=5002
       - RCON_PASSWORD=123456
       - GUI=false
+      - SERVER_PORT=5000
     image: itzg/minecraft-server

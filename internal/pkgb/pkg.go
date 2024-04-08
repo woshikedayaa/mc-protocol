@@ -13,10 +13,11 @@ type PKG struct {
 	isRO         bool // read-only
 }
 
-func NewPackage(defaultOrder binary.ByteOrder) *PKG {
+func newPackage(defaultOrder binary.ByteOrder) *PKG {
 	p := new(PKG)
 	p.defaultOrder = defaultOrder
 	p.isRO = false
+	p.buf = new(bytes.Buffer)
 	// add length
 	p.buf.Write(conv.Uint32(0, binary.LittleEndian))
 	// package id

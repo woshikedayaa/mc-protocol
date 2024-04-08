@@ -16,6 +16,7 @@ func NewClient(server string, ops ...option) (*Client, error) {
 		err error
 	)
 	c.server = server
+	c.op = new(optionType)
 	c.op.ops = ops
 	err = c.op.check(c)
 	if err != nil {

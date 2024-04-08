@@ -8,7 +8,9 @@ import (
 
 var errNOOP = errors.New("noop implementation client")
 
-type cNoop struct{}
+type cNoop struct {
+	handShaken bool
+}
 
 func (c *cNoop) Ping(conn net.Conn) (Response, error) {
 	return nil, errNOOP
@@ -22,10 +24,14 @@ func (c *cNoop) GetPackage() *pkgb.PKG {
 	return nil
 }
 
-func (c *cNoop) HandleShake(conn net.Conn) error {
+func (c *cNoop) HandShake(conn net.Conn) error {
 	return errNOOP
 }
 
 func (c *cNoop) Close(conn net.Conn) error {
 	return errNOOP
+}
+
+func (c *cNoop) IsHandShaken() bool {
+	return c.handShaken
 }

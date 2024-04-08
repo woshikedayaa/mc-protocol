@@ -12,7 +12,7 @@ type Builder struct {
 
 func B() *Builder {
 	b := &Builder{}
-	b.p = NewPackage(binary.LittleEndian)
+	b.p = newPackage(binary.LittleEndian)
 	return b
 }
 
@@ -28,6 +28,16 @@ func (b *Builder) AppendString(s string) *Builder {
 
 func (b *Builder) Append(bs []byte) *Builder {
 	_, _ = b.p.Write(bs)
+	return b
+}
+
+func (b *Builder) AppendUint64(u uint64, order binary.ByteOrder) *Builder {
+	_, _ = b.p.Write(conv.Uint64(u, order))
+	return b
+}
+
+func (b *Builder) AppendUint32(u uint32, order binary.ByteOrder) *Builder {
+	_, _ = b.p.Write(conv.Uint32(u, order))
 	return b
 }
 

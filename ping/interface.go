@@ -14,6 +14,7 @@ type IPing interface {
 	Ping(conn net.Conn) (Response, error)
 	GetLatency(conn net.Conn) (int, error)
 	GetPackage() *pkgb.PKG
-	HandleShake(conn net.Conn) error
+	HandShake(conn net.Conn) error
 	Close(conn net.Conn) error
+	IsHandShaken() bool
 }

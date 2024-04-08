@@ -21,7 +21,7 @@ type optionType struct {
 
 func (ot *optionType) check(c *Client) error {
 	ops := append(defaultOptions, ot.ops...)
-	for i := 0; i < len(ot.ops); i++ {
+	for i := 0; i < len(ops); i++ {
 		ops[i].apply(c)
 	}
 	var err, err2 error
