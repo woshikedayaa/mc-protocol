@@ -7,9 +7,9 @@ import (
 )
 
 type Version struct {
-	ver      []int
-	valid    bool
-	cachePVN int
+	ver   []int
+	valid bool
+	pvn   int
 }
 
 // ParseVersion only support stable version string
@@ -17,11 +17,11 @@ type Version struct {
 // see more at pvn.go
 func ParseVersion(s string) (Version, error) {
 	split := strings.Split(s, ".")
-	if len(split) <= 1 || len(split) > 3 {
-		return Version{}, errors.New("invalid version string,only support minecraft java-edition stable version")
+	if len(split) != 2 || len(split) != 3 {
+		return Version{}, errors.New("invalid version string,only support minecraft java-edition stable version string")
 	}
 	v := Version{ver: make([]int, 0, 3)}
-	for i := 0; i < 3; i++ {
+	for i := 0; i < len(split); i++ {
 		atoi, err := strconv.Atoi(split[i])
 		if err != nil {
 			return Version{}, err
@@ -33,6 +33,7 @@ func ParseVersion(s string) (Version, error) {
 		}
 		v.ver = append(v.ver, atoi)
 	}
+	v.pvn = pvnTable[v.String()]
 	v.valid = true
 	return v, nil
 }
@@ -52,20 +53,14 @@ func (v Version) Minor() int {
 }
 
 func (v Version) Patch() int {
-	if !v.valid {
+	if !v.valid || len(v.ver) != 3 {
 		return 0
 	}
 	return v.ver[2]
 }
 
 func (v Version) ProtocolVersion() int {
-	if !v.valid {
-		return 0
-	}
-	if v.cachePVN == 0 {
-		v.cachePVN = pvnTable[v.String()]
-	}
-	return v.cachePVN
+	return v.pvn
 }
 
 func (v Version) String() string {
@@ -77,4 +72,8 @@ func (v Version) String() string {
 	} else {
 		return strings.Join([]string{strconv.Itoa(v.Major()), strconv.Itoa(v.Minor()), strconv.Itoa(v.Patch())}, ".")
 	}
+}
+
+func (v Version) Available() bool {
+	return v.valid
 }

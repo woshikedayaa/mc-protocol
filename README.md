@@ -1,3 +1,9 @@
+>TIP
+> This PROJECT i will do not maintain after
+> if you have any question , open a pr pls.
+> I would be glad to marge your pr to main
+
+
 # MC-protocol
 
 Golang's implementation of modern MC related Procotol
