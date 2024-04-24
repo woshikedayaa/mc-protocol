@@ -16,6 +16,7 @@ type PackageQuery struct {
 	token     int32
 }
 
+// Encode parse the package to a byte array for send udp package
 func (p *PackageQuery) Encode() ([]byte, error) {
 	/*
 			Field-name	Field-Type	Notes
@@ -44,7 +45,7 @@ func (p *PackageQuery) Encode() ([]byte, error) {
 	switch p.typ {
 	case HandShakeType:
 		// do nothing
-	case StatType:
+	case StatQueryType:
 		err = binary.Write(buf, binary.BigEndian, p.token)
 		if err != nil {
 			return nil, err

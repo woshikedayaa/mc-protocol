@@ -1,3 +1,5 @@
+// Package query
+// It was completed under  document https://wiki.vg/Query
 package query
 
 import (
@@ -6,56 +8,87 @@ import (
 )
 
 const (
+	// magic each package will start with the magic number
 	magic uint16 = 0xFEFD
 )
 
+// see below
 type queryType byte
 
 const (
+	// HandShakeType for get Token
+	// see Client.RefreshToken
 	HandShakeType queryType = 9
-	StatType      queryType = 0
+	// StatQueryType for get server stats
+	StatQueryType queryType = 0
 )
 
 type Client interface {
+	// Token return current Token.
+	// warning: Token maybe has been expired.
+	// you can use RefreshToken to refresh Token.
+	// use IsTokenExpire to check does Token expired.
 	Token() int32
+
 	RefreshToken() error
+
+	// IsTokenExpire return true when Token has expired.
 	IsTokenExpire() bool
+
+	// SessionID return the client unique-session
+	// usually , it is time-based.
+	// see NewQueryClient
 	SessionID() int32
+
+	// FullRequest return a full server stat,
+	// compared with BasicRequest, there are more players,Plugins,Version and GameID.
+	// see FullResponse and BasicResponse
 	FullRequest() (*FullResponse, error)
+
+	// BasicRequest return a basic server stat.
+	// effective than FullRequest
 	BasicRequest() (*BasicResponse, error)
+
+	// HandShakeRequest to get challenge-Token
+	// about challenge-Token: https://wiki.vg/Query
 	HandShakeRequest() (*HandleShakeResponse, error)
+
+	// Close is optional.
+	// Because query network is based on UDP.
+	// UDP is connectionless.
 	Close() error
 }
 
 type BaseClient struct {
 	conn   *net.UDPConn
 	server string
-	port   int
 
-	lastRefresh int64
+	lastRefresh int64 // second
 	sessionID   int32
 	cachedToken int32
 	// options
 
+	network string
 	timeout time.Duration
 }
 
 func NewQueryClient(server string, ops ...Option) (Client, error) {
 	c := &BaseClient{}
-	c.server = server
-	addr, err := net.ResolveUDPAddr("udp", server)
+	for _, v := range append(defaultOptions, ops...) {
+		v.apply(c)
+	}
+	addr, err := net.ResolveUDPAddr(c.network, server)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := net.DialUDP(c.network, nil, addr)
 	if err != nil {
 		return nil, err
 	}
 	c.sessionID = int32(time.Now().Unix()) & 0x0F0F0F0F
-	conn, err := net.DialUDP("udp", nil, addr)
-	if err != nil {
-		return nil, err
-	}
 	c.conn = conn
-	for _, v := range append(defaultOptions, ops...) {
-		v.apply(c)
-	}
+	c.server = server
 	return c, nil
 }
 
@@ -78,7 +111,7 @@ func (b *BaseClient) RefreshToken() error {
 		return err
 	}
 	b.lastRefresh = time.Now().Unix()
-	b.cachedToken = hresp.token
+	b.cachedToken = hresp.Token
 	return nil
 }
 
@@ -92,7 +125,7 @@ func (b *BaseClient) SessionID() int32 {
 
 func (b *BaseClient) FullRequest() (*FullResponse, error) {
 	res := &FullResponse{}
-	recv, err := b.sendAndRecv(StatType, true)
+	recv, err := b.sendAndRecv(StatQueryType, true)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +138,7 @@ func (b *BaseClient) FullRequest() (*FullResponse, error) {
 
 func (b *BaseClient) BasicRequest() (*BasicResponse, error) {
 	res := &BasicResponse{}
-	recv, err := b.sendAndRecv(StatType, false)
+	recv, err := b.sendAndRecv(StatQueryType, false)
 	if err != nil {
 		return nil, err
 	}

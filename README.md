@@ -1,3 +1,9 @@
+>TIP
+> This PROJECT i will do not maintain after
+> if you have any question , open a pr pls.
+> I would be glad to marge your pr to main
+
+
 # MC-protocol
 
 Golang's implementation of modern MC related Procotol
@@ -6,6 +12,7 @@ Golang's implementation of modern MC related Procotol
 
 - [x] Query
 - [x] Rcon
+- [ ] Ping
 - [ ] Client
 
 # Quick-start
@@ -18,53 +25,7 @@ $ curl https://raw.githubusercontent.com/woshikedayaa/mc-protocol/main/example/d
 > docker-compose.yaml
 $ docker compose up -d # start minecraft-server
 ```
+## Usage
+See [example](https://github.com/woshikedayaa/mc-protocol/blob/main/example) 
 
-## BasicQuery
-
-```go
-// Query -> example/basic_query.go
-func main() {
-	client, err := query.NewQueryClient("127.0.0.1:5001")
-	// with TimeOut. default 10s
-	// client, err := query.NewQueryClient("127.0.0.1:5001",query.Options.WithTimeOut(10 * time.Second))
-	if err != nil {
-            panic(err)
-	}
-	defer client.Close() // optional
-	response, err := client.BasicRequest()
-	if err != nil {
-		panic(err)
-	}
-	// dump
-	json, err := response.JSON()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(json))
-}
-```
-
-## Rcon
-
-```go
-// Rcon->example/rcon.go
-func main() {
-    client, err := rcon.NewRconClient("127.0.0.1:5002")
-    // with TimeOut. default 10s
-    // client, err := rcon.NewRconClient("debian:5001", rcon.Options.WithTimeOut(10 * time.Second))
-    if err != nil {
-    panic(err)
-    }
-    defer client.Close() // must
-    err = client.Auth("123456")
-    if err != nil {
-    panic(err)
-    }
-    response, err := client.SendCommand("list")
-    if err != nil {
-    panic(err)
-    }
-    fmt.Println(response)
-}
-```
 

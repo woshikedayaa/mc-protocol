@@ -3,84 +3,71 @@ package query
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"io"
 	"strconv"
 )
 
 type Response interface {
+
+	// decode bind a byte array to Response
 	decode([]byte) error
 
-	JSON() ([]byte, error)
+	// SessionID return the response's session
 	SessionID() int32
+
 	IsStatQuery() bool
 }
 
 type EmptyResponse struct {
-	typ       queryType
-	sessionID int32
-}
-
-func (e *EmptyResponse) JSON() ([]byte, error) {
-	return json.Marshal(map[string]any{
-		"sessionID": e.SessionID(),
-		"queryType": int(e.typ), // 9 for handshake, 0 for stat
-	})
+	Typ     queryType `json:"Typ"`
+	Session int32     `json:"session"`
 }
 
 func (e *EmptyResponse) SessionID() int32 {
-	return e.sessionID
+	return e.Session
 }
 
 func (e *EmptyResponse) IsStatQuery() bool {
-	return e.typ == StatType
+	return e.Typ == StatQueryType
 }
 
 func (e *EmptyResponse) decode(bs []byte) error {
 	if len(bs) < 5 {
 		return errors.New("response bytes length to short")
 	}
-	// parse the typ and sessionID
-	e.typ = queryType(bs[0])
+	// parse the Typ and session
+	e.Typ = queryType(bs[0])
 	// big-Ending
-	e.sessionID = int32(uint32(bs[1])<<24 | uint32(bs[2])<<16 | uint32(bs[3])<<8 | uint32(bs[4]))
+	e.Session = int32(uint32(bs[1])<<24 | uint32(bs[2])<<16 | uint32(bs[3])<<8 | uint32(bs[4]))
 	return nil
 }
 
 type BasicResponse struct {
 	EmptyResponse
-	_MOTD      string
-	gameType   string
-	_map       string
-	curPlayers int // current-player
-	maxPlayer  int
-	port       int
-	ip         string // alias hostname
+	MOTD       string `json:"motd"`
+	GameType   string `json:"gameType"`
+	Map        string `json:"map"`
+	NumPlayers int    `json:"numPlayers"`
+	MaxPlayer  int    `json:"maxPlayer"`
+	Port       int    `json:"port"`
+	HostName   string `json:"hostName"`
 }
 
 type FullResponse struct {
-	EmptyResponse
-	_MOTD      string
-	gameType   string
-	_map       string
-	curPlayers int // current-player
-	maxPlayer  int
-	port       int
-	ip         string // alias hostname
-	// extend
-	plugins string
-	gameID  string
-	player  []string
-	version string
+	BasicResponse
+	// extend than BasicResponse
+	Plugins string   `json:"plugins"`
+	GameID  string   `json:"gameID"`
+	Players []string `json:"players"`
+	Version string   `json:"version"`
 }
 
 type HandleShakeResponse struct {
 	EmptyResponse
-	token int32
+	Token int32 `json:"token"`
 }
 
-// Encode BasicResponse
 func (r *BasicResponse) decode(bs []byte) error {
 	var (
 		lastRead = 5 // start
@@ -100,42 +87,43 @@ func (r *BasicResponse) decode(bs []byte) error {
 			return nil
 		}
 	)
-	r._MOTD = string(find())
-	r.gameType = string(find())
-	r._map = string(find())
-	r.curPlayers = byteArrayToInt(find())
-	r.maxPlayer = byteArrayToInt(find())
+	r.MOTD = string(find())
+	r.GameType = string(find())
+	r.Map = string(find())
+	r.NumPlayers = byteArrayToInt(find())
+	r.MaxPlayer = byteArrayToInt(find())
 	tempLastRead := lastRead
-	r.port = int(binary.LittleEndian.Uint16(find())) // 这里应该只读2个Byte
+	r.Port = int(binary.LittleEndian.Uint16(find())) // 这里应该只读2个Byte
 	lastRead = tempLastRead + 2
-	r.ip = string(find())
+	r.HostName = string(find())
 	return r.EmptyResponse.decode(bs)
 }
 
 func (r *FullResponse) decode(bs []byte) error {
-	Skip1 := 1 + 4 + 11
-	Skip2 := 10
+	Skip1 := 1 + 4 + 11 // head and padding
+	Skip2 := 10         // padding-2
 	Skip2 += r.parseKVString(bs[Skip1:]) + Skip1
 	r.parsePlayerString(bs[Skip2:])
 	return r.EmptyResponse.decode(bs)
 }
 
 func (r *HandleShakeResponse) decode(bs []byte) error {
-	buffer := bytes.NewBuffer(bs[5:])
-	token, err := buffer.ReadBytes(0x00)
-	if err != nil {
-		return err
-	}
+	var err error
 	err = r.EmptyResponse.decode(bs)
 	if err != nil {
 		return err
 	}
 
 	if r.IsStatQuery() {
-		return errors.New("except QueryType is HandShakeType,but current QueryType is StatType")
+		return errors.New("except QueryType is HandShakeType,but current QueryType is StatQueryType")
+	}
+	buffer := bytes.NewBuffer(bs[5:])
+	token, err := buffer.ReadBytes(0x00)
+	if err != nil {
+		return err
 	}
 
-	r.token = r.parseTokenString(string(token))
+	r.Token = r.parseTokenString(string(token))
 	return nil
 }
 
@@ -144,6 +132,7 @@ func (r *HandleShakeResponse) parseTokenString(s string) int32 {
 	return int32(atoi)
 }
 
+// parseKVString return the length of KVString
 func (r *FullResponse) parseKVString(bs []byte) int {
 	n := len(bs)
 	var lastRead int
@@ -168,16 +157,16 @@ func (r *FullResponse) parseKVString(bs []byte) int {
 		return nil
 	}
 
-	r._MOTD = string(find())
-	r.gameType = string(find())
-	r.gameID = string(find())
-	r.version = string(find())
-	r.plugins = string(find())
-	r._map = string(find())
-	r.curPlayers = byteArrayToInt(find())
-	r.maxPlayer = byteArrayToInt(find())
-	r.port = byteArrayToInt(find())
-	r.ip = string(find())
+	r.MOTD = string(find())
+	r.GameType = string(find())
+	r.GameID = string(find())
+	r.Version = string(find())
+	r.Plugins = string(find())
+	r.Map = string(find())
+	r.NumPlayers = byteArrayToInt(find())
+	r.MaxPlayer = byteArrayToInt(find())
+	r.Port = byteArrayToInt(find())
+	r.HostName = string(find())
 
 	for len(find()) != 0 {
 	} // find last
@@ -190,19 +179,20 @@ func (r *FullResponse) parsePlayerString(bs []byte) {
 		buf = bytes.NewBuffer(bs)
 		s   = ""
 	)
-	for !errors.Is(err, io.EOF) || len(s) != 0 {
+	for len(s) != 0 || !errors.Is(err, io.EOF) {
 		s, err = buf.ReadString(0x00)
 		if len(s) != 0 {
-			r.player = append(r.player, s)
+			r.Players = append(r.Players, s)
 		}
 	}
 	// avoid memory-leak
-	r.player = append([]string{}, r.player[:len(r.player)-1]...)
+	r.Players = append([]string{}, r.Players[:len(r.Players)-1]...)
 	if err != nil && !errors.Is(err, io.EOF) {
 		panic(err)
 	}
 }
 
+// ascii code to int
 func byteArrayToInt(bs []byte) (ans int) {
 	for i := 0; i < len(bs); i++ {
 		ans = ans*10 + int(bs[i]-'0')

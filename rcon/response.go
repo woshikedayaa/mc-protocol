@@ -6,34 +6,18 @@ type ResponseBody []byte
 const (
 	TypeAuthorize    PackageType = 3
 	TypeCommand      PackageType = 2
-	TypeMultiPackage PackageType = 0
+	TypeMultiPackage PackageType = 0 // not implemented
 )
 
 type Response struct {
-	id   int32
-	size int32
-	typ  PackageType
-	body ResponseBody
-}
-
-func (resp *Response) ID() int32 {
-	return resp.id
-}
-
-func (resp *Response) Size() int32 {
-	return resp.size
-}
-
-func (resp *Response) Type() PackageType {
-	return resp.typ
-}
-
-func (resp *Response) Body() ResponseBody {
-	return resp.body
+	Id   int32        `json:"id"`
+	Size int32        `json:"size"`
+	Typ  PackageType  `json:"type"`
+	Body ResponseBody `json:"body"`
 }
 
 func (resp *Response) String() string {
-	return resp.body.String()
+	return resp.Body.String()
 }
 
 func (b ResponseBody) String() string {
